@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TextTranslator.Views.VocabularyListPage"
+             Title="{Binding Title}">
+    <VerticalStackLayout Padding="16" Spacing="10">
+        <SearchBar Placeholder="Keresés"
+                   Text="{Binding SearchText}" />
+
+        <HorizontalStackLayout Spacing="10">
+            <Button Text="Keresés" Command="{Binding SearchCommand}" />
+            <Button Text="Új szó" Clicked="OnAddClicked" />
+            <Button Text="OCR import" Clicked="OnImportClicked" />
+        </HorizontalStackLayout>
+
+        <CollectionView ItemsSource="{Binding Items}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Padding="10" Margin="0,6">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding SourceWord}" FontAttributes="Bold" FontSize="18" />
+                            <Label Text="{Binding TargetWord}" />
+                            <Label Text="{Binding PartOfSpeech}" />
+                            <Label Text="{Binding Note}" />
+
+                            <HorizontalStackLayout Spacing="8">
+                                <Button Text="Szerkesztés" Clicked="OnEditClicked" CommandParameter="{Binding Id}" />
+                                <Button Text="Felolvasás" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SpeakCommand}" CommandParameter="{Binding .}" />
+                                <Button Text="Törlés" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteCommand}" CommandParameter="{Binding .}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentPage>

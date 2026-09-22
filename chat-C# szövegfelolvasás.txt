@@ -1,0 +1,5376 @@
+### USER
+van olyan lehetőség c# ban olyan lehetőség hogy szöveget felolvassa a program? Milyen package kell hozzá?
+
+### ASSISTANT
+Igen, van ilyen lehetőség C#-ban: **szövegfelolvasás / text-to-speech (TTS)**.
+
+## 1. Egyszerű beépített megoldás
+Régebbi / Windowsos környezetben használható a:
+
+- **`System.Speech`**
+
+### NuGet package
+Ha nincs alapból elérhető, akkor általában ezt kell:
+
+- **System.Speech**
+
+### Példa
+```csharp
+using System.Speech.Synthesis;
+
+class Program
+{
+    static void Main()
+    {
+        using (SpeechSynthesizer synth = new SpeechSynthesizer())
+        {
+            synth.Speak("Szia! Ez egy felolvasott szöveg.");
+        }
+    }
+}
+```
+
+## 2. Fontos: ez főleg Windowsra jó
+A `System.Speech` leginkább **Windows-specifikus**.  
+Ha:
+
+- **.NET Framework**-öt használsz Windows alatt → jó választás
+- **.NET 6 / .NET 7 / .NET 8** cross-platform projekted van → ez nem mindig ideális
+
+---
+
+## 3. Modern, cross-platform megoldások
+Ha modernebb vagy több platformos megoldás kell, akkor inkább valamilyen külső szolgáltatás:
+
+- **Azure Cognitive Services Speech**
+- **Google Cloud Text-to-Speech**
+- **Amazon Polly**
+
+### Azure package
+Például Azure esetén NuGet:
+
+- **Microsoft.CognitiveServices.Speech**
+
+Ez jobb minőségű hangokat is tud.
+
+---
+
+## 4. Azure példa
+```csharp
+using Microsoft.CognitiveServices.Speech;
+
+class Program
+{
+    static async Task Main()
+    {
+        var config = SpeechConfig.FromSubscription("AZURE_KULCS", "REGIO");
+        using var synthesizer = new SpeechSynthesizer(config);
+
+        await synthesizer.SpeakTextAsync("Szia, ez egy Azure által felolvasott szöveg.");
+    }
+}
+```
+
+---
+
+## 5. Melyiket válaszd?
+### Használd ezt, ha:
+- **egyszerű**
+- **helyi**
+- **Windowsos**
+- gyors teszt kell
+
+→ **System.Speech**
+
+### Használd ezt, ha:
+- **jobb minőségű hang**
+- **modern .NET**
+- **cross-platform**
+- online szolgáltatás belefér
+
+→ **Microsoft.CognitiveServices.Speech**
+
+---
+
+## 6. WinForms / WPF esetén is működik
+Ugyanúgy használható gombnyomásra:
+
+```csharp
+private void button1_Click(object sender, EventArgs e)
+{
+    using (SpeechSynthesizer synth = new SpeechSynthesizer())
+    {
+        synth.Speak(textBox1.Text);
+    }
+}
+```
+
+---
+
+## 7. NuGet telepítés
+Package Manager Console:
+
+```powershell
+Install-Package System.Speech
+```
+
+vagy Azure esetén:
+
+```powershell
+Install-Package Microsoft.CognitiveServices.Speech
+```
+
+---
+
+Ha akarod, tudok írni neked **konkrét példát Console / WinForms / WPF / .NET 8** projektre is.
+
+### USER
+és image (png) ből szöveget beolvasni egy stringbe?
+
+### ASSISTANT
+Igen, ez **OCR**: képből szöveg felismerése.
+
+## Lehetőségek C#-ban
+
+### 1. Tesseract OCR
+A leggyakoribb ingyenes megoldás.
+
+#### NuGet:
+- **Tesseract**
+
+Gyakran kell hozzá a nyelvi adatfájl is, pl. `tessdata` mappa.
+
+### Egyszerű példa
+```csharp
+using Tesseract;
+
+class Program
+{
+    static void Main()
+    {
+        string imagePath = "kep.png";
+        string text = ReadTextFromImage(imagePath);
+        Console.WriteLine(text);
+    }
+
+    static string ReadTextFromImage(string imagePath)
+    {
+        using var engine = new TesseractEngine(@"./tessdata", "eng", EngineMode.Default);
+        using var img = Pix.LoadFromFile(imagePath);
+        using var page = engine.Process(img);
+
+        return page.GetText();
+    }
+}
+```
+
+---
+
+## 2. Magyar szöveghez
+Ha magyar szöveg van a képen, akkor a `hun.traineddata` fájl is kell a `tessdata` mappába.
+
+Példa:
+```csharp
+using var engine = new TesseractEngine(@"./tessdata", "hun", EngineMode.Default);
+```
+
+Ha vegyes:
+```csharp
+using var engine = new TesseractEngine(@"./tessdata", "hun+eng", EngineMode.Default);
+```
+
+---
+
+## 3. Kell hozzá package?
+Igen:
+
+```powershell
+Install-Package Tesseract
+```
+
+---
+
+## 4. Kimenet stringbe
+Pontosan úgy, ahogy kérdezted: az OCR eredménye simán mehet stringbe:
+
+```csharp
+string text = page.GetText();
+```
+
+---
+
+## 5. Másik lehetőség: Azure OCR
+Ha jobb pontosság kell, akkor:
+- **Azure Computer Vision / Document Intelligence**
+- online API
+- fizetős / limitált free tier
+
+---
+
+## 6. Fontos
+Az OCR minősége nagyon függ attól, hogy a PNG:
+- éles-e
+- nagy felbontású-e
+- nem homályos-e
+- jól olvasható betűk vannak-e rajta
+
+---
+
+## 7. Komplett függvény
+```csharp
+using Tesseract;
+
+public static string ExtractTextFromPng(string filePath)
+{
+    using var engine = new TesseractEngine(@"./tessdata", "hun+eng", EngineMode.Default);
+    using var img = Pix.LoadFromFile(filePath);
+    using var page = engine.Process(img);
+
+    return page.GetText();
+}
+```
+
+Használat:
+```csharp
+string result = ExtractTextFromPng("valami.png");
+Console.WriteLine(result);
+```
+
+---
+
+Ha akarod, a következő üzenetben tudok adni egy **teljes működő .NET console projektet**, ami:
+- beolvas egy PNG-t,
+- kiszedi belőle a szöveget,
+- és elmenti `.txt` fájlba.
+
+### USER
+holland?
+
+### ASSISTANT
+Igen, **holland nyelv is van** Tesseracthoz.
+
+## Nyelvkód
+A holland nyelv kódja:
+
+- **`nld`**
+
+## Példa
+```csharp
+using var engine = new TesseractEngine(@"./tessdata", "nld", EngineMode.Default);
+```
+
+Ha vegyes, például holland + angol:
+```csharp
+using var engine = new TesseractEngine(@"./tessdata", "nld+eng", EngineMode.Default);
+```
+
+---
+
+## Mire van szükség?
+A `tessdata` mappában benne kell lennie ennek a fájlnak:
+
+- **`nld.traineddata`**
+
+és persze az angolhoz, ha kell:
+
+- `eng.traineddata`
+
+---
+
+## Telepítés
+NuGet:
+```powershell
+Install-Package Tesseract
+```
+
+A nyelvi fájlokat külön kell betenni a `tessdata` mappába.
+
+---
+
+## Teljes példa
+```csharp
+using Tesseract;
+
+public static string ExtractDutchText(string filePath)
+{
+    using var engine = new TesseractEngine(@"./tessdata", "nld", EngineMode.Default);
+    using var img = Pix.LoadFromFile(filePath);
+    using var page = engine.Process(img);
+
+    return page.GetText();
+}
+```
+
+Használat:
+```csharp
+string text = ExtractDutchText("dutch.png");
+Console.WriteLine(text);
+```
+
+---
+
+Ha akarod, adok egy **mintaprojekt-struktúrát is**, hogy pontosan hová rakd a `tessdata` mappát Visual Studio projektben.
+
+### USER
+olyat lehet AI-al vegyítve hogy képről beolvasom pl. a holland/angol/német stb.. szöveget és azt szavanként lefordítani magyarra?
+
+### ASSISTANT
+Igen, **simán lehet**, és ez egy teljesen jó workflow:
+
+1. **OCR** – képről kiolvasod a szöveget  
+2. **nyelvfelismerés** – megállapítod, hogy holland / angol / német stb.  
+3. **fordítás** – lefordítod magyarra  
+4. ha akarod: **szavanként**, **soronként**, vagy **teljes mondatként**
+
+## Fontos különbség
+A **szavankénti fordítás** technikailag megoldható, de nem mindig lesz jó.
+
+Példa:
+
+- angol: `bank`
+- magyarul lehet:
+  - **bank**
+  - **part**
+  
+Csak a mondatból derül ki.
+
+Ezért általában jobb:
+
+- **mondatonként fordítani**
+- és mellé opcionálisan **szavankénti szótári jelentést** adni
+
+---
+
+# Megoldási lehetőségek C#-ban
+
+## 1. OCR + fordító API
+### OCR:
+- **Tesseract**  
+vagy
+- **Azure Computer Vision**
+- **Google Vision**
+
+### Fordítás:
+- **Azure Translator**
+- **Google Translate API**
+- **DeepL API**
+
+---
+
+# Egyszerű architektúra
+
+## Opció A – lokális OCR + online fordítás
+- PNG beolvasás
+- Tesseract kiolvassa a szöveget
+- szavakra bontod
+- minden szót elküldesz fordításra
+- visszakapod a magyar megfelelőket
+
+Ez működik, de:
+- lassú lehet
+- sok API hívás
+- a szavankénti fordítás sokszor pontatlan
+
+---
+
+## Opció B – AI-val okosabban
+- OCR-rel kiszeded a teljes szöveget
+- AI-nak elküldöd:
+  - ismerje fel a nyelvet
+  - fordítsa magyarra
+  - adjon szavankénti listát is
+
+Ez sokkal használhatóbb.
+
+Példa kimenet:
+
+| Eredeti szó | Magyar | Megjegyzés |
+|---|---|---|
+| huis | ház | főnév |
+| groot | nagy | melléknév |
+| lopen | futni / menni | igétől függ |
+
+---
+
+# C#-ban hogyan nézne ki?
+
+## 1. OCR rész Tesseracttal
+```csharp
+using Tesseract;
+
+public static string ExtractTextFromImage(string filePath, string lang)
+{
+    using var engine = new TesseractEngine(@"./tessdata", lang, EngineMode.Default);
+    using var img = Pix.LoadFromFile(filePath);
+    using var page = engine.Process(img);
+
+    return page.GetText();
+}
+```
+
+Példák:
+- holland: `nld`
+- angol: `eng`
+- német: `deu`
+
+---
+
+## 2. Szavakra bontás
+```csharp
+using System.Text.RegularExpressions;
+
+public static List<string> SplitWords(string text)
+{
+    return Regex.Matches(text, @"\p{L}+")
+                .Select(m => m.Value)
+                .Distinct()
+                .ToList();
+}
+```
+
+Ez kiszedi a betűkből álló szavakat.
+
+---
+
+## 3. Fordítás API-val
+Például **DeepL** vagy **Azure Translator**.
+
+### DeepL NuGet
+Nincs mindig hivatalos package szükségszerűen, sima HTTP-vel is mehet.
+
+Példa HTTP kérésre:
+```csharp
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+
+public static async Task<string> TranslateTextAsync(string text, string apiKey)
+{
+    using var client = new HttpClient();
+
+    var values = new Dictionary<string, string>
+    {
+        { "text", text },
+        { "target_lang", "HU" }
+    };
+
+    var content = new FormUrlEncodedContent(values);
+    client.DefaultRequestHeaders.Add("Authorization", $"DeepL-Auth-Key {apiKey}");
+
+    var response = await client.PostAsync("https://api-free.deepl.com/v2/translate", content);
+    var json = await response.Content.ReadAsStringAsync();
+
+    return json;
+}
+```
+
+---
+
+# Szavankénti fordítás példa
+```csharp
+public static async Task<Dictionary<string, string>> TranslateWordsAsync(List<string> words)
+{
+    var result = new Dictionary<string, string>();
+
+    foreach (var word in words)
+    {
+        // ide jön az API hívás
+        result[word] = $"[magyar fordítás: {word}]";
+    }
+
+    return result;
+}
+```
+
+---
+
+# Jobb megoldás: mondat + szólista együtt
+Például:
+
+**OCR szöveg:**
+`Het huis is groot.`
+
+**AI feldolgozás után:**
+- Teljes fordítás: **A ház nagy.**
+- Szavanként:
+  - Het = a/az
+  - huis = ház
+  - is = van
+  - groot = nagy
+
+Ez sokkal értelmesebb.
+
+---
+
+# Amit ajánlok neked
+Ha ezt tényleg használni akarod, akkor ez a legjobb kombináció:
+
+## Egyszerű, olcsóbb:
+- **Tesseract OCR**
+- **DeepL API** vagy **Azure Translator**
+- saját C# logika szavankénti bontásra
+
+## Okosabb, jobb:
+- **OCR**
+- majd **AI / LLM** elemzés:
+  - nyelvfelismerés
+  - teljes fordítás
+  - szavankénti jelentés
+  - esetleg kiejtés vagy szófaj
+
+---
+
+# Reális korlátok
+## Szavankénti fordításnál problémák:
+- ragozott alakok
+- többjelentésű szavak
+- összetett szavak németben
+- névelők, igekötők, különírás
+
+Például német:
+- `Krankenhausverwaltung`
+  - ezt szavanként nehezebb jól bontani
+
+Ezért AI itt sokat segíthet.
+
+---
+
+# Lehetséges végső app
+Csinálhatsz egy olyan C# appot, ami:
+
+- kiválasztasz egy képet
+- OCR kiolvassa a szöveget
+- felismeri a nyelvet
+- lefordítja magyarra
+- készít táblázatot:
+
+```text
+Eredeti: Het huis is groot.
+Magyar: A ház nagy.
+
+Szavak:
+Het   -> a/az
+huis  -> ház
+is    -> van
+groot -> nagy
+```
+
+---
+
+# Rövid válasz
+**Igen, lehet.**
+A tipikus stack:
+
+- **Tesseract** → képről szöveg
+- **fordító API / AI** → magyar fordítás
+- C# → összeragasztja az egészet
+
+---
+
+Ha akarod, a következő üzenetben adok egy **konkrét C# mintát**, ami:
+1. beolvas egy PNG-t,  
+2. OCR-ozza holland/angol/német nyelven,  
+3. kimenti a szöveget,  
+4. és előkészíti szavankénti fordításra.
+
+### USER
+arra gondoltam, hogy nyelvtanulás céljából hogy szavakat tudjam memorizálni egy képről beolvasni szöveget,  a szavakat táblázatosan elmenteni pl. Holland - Magyar  vagy lehet Magyar - Holland is a harmadik oszlop lenne a Megjegyzés ahol lehetne látni hogy Főnév, ige, melléknév stb… Ezekből a szavakból (névelő nem kell) egy felelet választós kikérdezőt csinálni pl. 3 - 4 opcióval és ezek közül kell a helyes választ kiválasztani. A végén lenne egy összesítés mennyit sikerült eltalálni. Lenne egy olyan lehetőség, hogy szavanként felolvasni a kiválasztott szót pl. Angol/Magyar/Holland/Német stb..., de lehetne az egész beolvasott szöveget is felolvastatni c# MAUI-ban?
+
+### ASSISTANT
+Igen, **ezt teljesen meg lehet csinálni C# MAUI-ban**, és kifejezetten jó nyelvtanulós app lehet belőle.
+
+Amit leírtál, az gyakorlatilag ez a rendszer:
+
+1. **képből szöveg beolvasás** OCR-rel  
+2. **szavak kinyerése** a szövegből  
+3. **fordítás** pl. Holland → Magyar vagy Magyar → Holland  
+4. **szófaj meghatározás**: főnév, ige, melléknév stb.  
+5. **táblázatos mentés**  
+6. **feleletválasztós kikérdező** 3–4 opcióval  
+7. **eredmény összesítés**  
+8. **szavankénti felolvasás**  
+9. **teljes szöveg felolvasás**  
+
+És igen: **MAUI-ban a felolvasás is megoldható**.
+
+---
+
+# Röviden: igen, minden része megoldható
+
+## OCR
+Képről szöveg kiolvasás:
+- Tesseract
+- vagy cloud OCR (Azure / Google Vision)
+
+## Tárolás
+Szavakat mentheted:
+- SQLite adatbázisba
+- JSON-ba
+- CSV-be
+
+MAUI-hoz a **SQLite** lenne a legjobb.
+
+## Fordítás
+- DeepL API
+- Azure Translator
+- Google Translate API
+
+## Szófaj
+- AI / LLM segítségével
+- vagy szótári API-val
+- vagy részben kézzel javítható mezővel
+
+## Felolvasás
+MAUI-ban van beépített lehetőség:
+- **`TextToSpeech`**
+
+---
+
+# Amit különösen ajánlok
+A te use case-edre nem a „nyers szavankénti automatikus feldolgozás” a legjobb első lépés, hanem ez:
+
+## Javasolt workflow
+### 1. Kép beolvasása
+A user kiválaszt egy PNG/JPG képet.
+
+### 2. OCR
+A rendszer kiszedi a teljes szöveget.
+
+### 3. Szólista generálás
+A rendszer:
+- kiszedi a szavakat
+- eltávolítja az írásjeleket
+- kiszűri a névelőket, ha akarod
+- kiszedi az ismétlődéseket
+
+### 4. Fordítás + szófaj
+A rendszer minden szóhoz eltárolja:
+- Eredeti szó
+- Magyar jelentés
+- Szófaj
+- Megjegyzés
+- Forrásnyelv
+
+### 5. User ellenőrzi
+Ez fontos, mert az AI/OCR hibázhat.
+Tehát legyen egy szerkeszthető táblázat.
+
+### 6. Kikérdező
+A mentett szavakból generál kérdéseket.
+
+### 7. Felolvasás
+- egy szó felolvasása
+- a teljes mondat vagy szöveg felolvasása
+
+---
+
+# MAUI-ban a felolvasás
+
+## Beépített TTS
+A .NET MAUI-ban van:
+
+```csharp
+using Microsoft.Maui.Media;
+```
+
+és:
+
+```csharp
+await TextToSpeech.Default.SpeakAsync("Hallo, hoe gaat het?");
+```
+
+Ez a készülék / operációs rendszer beépített TTS motorját használja.
+
+---
+
+## Nyelv megadása
+Le lehet kérni a támogatott locale-okat:
+
+```csharp
+var locales = await TextToSpeech.Default.GetLocalesAsync();
+```
+
+Majd kiválasztani pl. hollandot:
+
+```csharp
+var locale = locales.FirstOrDefault(l => l.Language == "nl");
+
+await TextToSpeech.Default.SpeakAsync("Hallo", new SpeechOptions
+{
+    Locale = locale,
+    Pitch = 1.0f,
+    Volume = 1.0f
+});
+```
+
+### Nyelvkódok kb.
+- holland: `nl`
+- angol: `en`
+- német: `de`
+- magyar: `hu`
+
+Ez platformonként kicsit eltérhet, ezért a `GetLocalesAsync()` a biztos.
+
+---
+
+# Egy szó felolvasása
+```csharp
+public async Task SpeakWordAsync(string word, string languageCode)
+{
+    var locales = await TextToSpeech.Default.GetLocalesAsync();
+    var locale = locales.FirstOrDefault(l => l.Language.StartsWith(languageCode));
+
+    await TextToSpeech.Default.SpeakAsync(word, new SpeechOptions
+    {
+        Locale = locale
+    });
+}
+```
+
+Használat:
+```csharp
+await SpeakWordAsync("huis", "nl");
+await SpeakWordAsync("house", "en");
+await SpeakWordAsync("Haus", "de");
+await SpeakWordAsync("ház", "hu");
+```
+
+---
+
+# Teljes szöveg felolvasása
+Igen, ez is megy:
+
+```csharp
+await TextToSpeech.Default.SpeakAsync("Het huis is groot.");
+```
+
+Vagy nyelvvel együtt:
+
+```csharp
+await SpeakWordAsync("Het huis is groot.", "nl");
+```
+
+Tehát:
+- **szó**
+- **mondat**
+- **teljes OCR szöveg**
+mind felolvasható.
+
+---
+
+# OCR MAUI-ban
+Itt van egy fontos dolog:
+
+## Tesseract MAUI-ban
+Technikailag lehet, de MAUI-ban platformonként macerásabb lehet.
+
+### Egyszerűbb opciók:
+1. **OCR backend API**
+   - MAUI app feltölti a képet
+   - szerver feldolgozza OCR-rel
+   - visszaadja a szöveget
+
+2. **Azure Vision / Google Vision**
+   - közvetlen API hívás
+
+3. **Helyi OCR**
+   - platformfüggő megoldások Android/iOS/Windows alatt
+
+### Amit én javaslok:
+Ha gyorsan akarsz működő appot:
+- **MAUI frontend**
+- **OCR + fordítás API-val**
+- **SQLite helyi tárolás**
+
+---
+
+# Adatmodell javaslat
+
+## Szó rekord
+```csharp
+public class VocabularyItem
+{
+    public int Id { get; set; }
+
+    public string SourceLanguage { get; set; } = "";
+    public string SourceWord { get; set; } = "";
+    public string TargetWord { get; set; } = "";
+
+    public string PartOfSpeech { get; set; } = ""; // főnév, ige, melléknév
+    public string Note { get; set; } = "";
+
+    public string ExampleSentence { get; set; } = "";
+    public bool IsArticle { get; set; }
+}
+```
+
+---
+
+## Quiz kérdés modell
+```csharp
+public class QuizQuestion
+{
+    public string QuestionWord { get; set; } = "";
+    public string CorrectAnswer { get; set; } = "";
+    public List<string> Options { get; set; } = new();
+    public string PartOfSpeech { get; set; } = "";
+}
+```
+
+---
+
+# Táblázatos mentés
+MAUI-ban lehet:
+- CollectionView-ben listázni
+- DataGrid-szerű komponenssel
+- SQLite-ba menteni
+
+Példa logikai nézet:
+
+| Holland | Magyar | Megjegyzés |
+|---|---|---|
+| huis | ház | főnév |
+| lopen | futni/menni | ige |
+| groot | nagy | melléknév |
+
+vagy fordítva:
+
+| Magyar | Holland | Megjegyzés |
+|---|---|---|
+| ház | huis | főnév |
+| nagy | groot | melléknév |
+
+Ez csak UI kérdés, adatban ugyanaz marad.
+
+---
+
+# Névelők kihagyása
+Igen, ezt is lehet.
+
+Például hollandnál kiszűrhető:
+- de
+- het
+- een
+
+Németnél:
+- der
+- die
+- das
+- ein
+- eine
+
+Angolnál:
+- a
+- an
+- the
+
+Magyarnál:
+- a
+- az
+
+Példa:
+```csharp
+var excludedWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+{
+    "de", "het", "een", "the", "a", "an", "der", "die", "das", "ein", "eine"
+};
+
+var filtered = words.Where(w => !excludedWords.Contains(w)).ToList();
+```
+
+---
+
+# Feleletválasztós kikérdező
+
+## Működés
+Például:
+**Mi a "huis" jelentése?**
+
+Opciók:
+- ház ✅
+- autó
+- asztal
+- iskola
+
+A user választ, te eltárolod:
+- helyes / hibás
+- pontszám
+
+---
+
+## Kérdésgenerálás példa
+```csharp
+public QuizQuestion GenerateQuestion(List<VocabularyItem> vocabulary, Random random)
+{
+    var correct = vocabulary[random.Next(vocabulary.Count)];
+
+    var wrongOptions = vocabulary
+        .Where(x => x.TargetWord != correct.TargetWord)
+        .OrderBy(_ => random.Next())
+        .Take(3)
+        .Select(x => x.TargetWord)
+        .ToList();
+
+    var options = wrongOptions.Append(correct.TargetWord)
+                              .OrderBy(_ => random.Next())
+                              .ToList();
+
+    return new QuizQuestion
+    {
+        QuestionWord = correct.SourceWord,
+        CorrectAnswer = correct.TargetWord,
+        Options = options,
+        PartOfSpeech = correct.PartOfSpeech
+    };
+}
+```
+
+---
+
+# Eredmény összesítés
+Persze.
+
+Például:
+- 10 kérdésből 8 helyes
+- 80%
+- hibás szavak listája
+
+```csharp
+public class QuizResult
+{
+    public int TotalQuestions { get; set; }
+    public int CorrectAnswers { get; set; }
+    public int WrongAnswers => TotalQuestions - CorrectAnswers;
+    public double Percentage => TotalQuestions == 0 ? 0 : (double)CorrectAnswers / TotalQuestions * 100.0;
+}
+```
+
+---
+
+# Szófaj meghatározás
+Ez az egyik nehezebb rész.
+
+## Lehetőségek
+### 1. AI-val
+Beküldöd a szót / mondatot:
+- mondja meg a fordítást
+- mondja meg a szófajt
+
+### 2. Szótári API
+Bizonyos nyelvekre vannak dictionary API-k.
+
+### 3. Kézi korrekció
+Ez nagyon hasznos lenne:
+- AI kitölti
+- user javíthatja
+
+Ez a legpraktikusabb.
+
+---
+
+# Példa teljes folyamatra
+
+## Bemenet képről:
+`Het huis is groot. De man loopt naar school.`
+
+## Feldolgozás után:
+| Holland | Magyar | Megjegyzés |
+|---|---|---|
+| huis | ház | főnév |
+| groot | nagy | melléknév |
+| man | férfi | főnév |
+| loopt | megy / sétál | ige |
+| school | iskola | főnév |
+
+A `Het`, `De` kiszűrhető.
+
+---
+
+# Milyen technológiát ajánlok ehhez?
+
+## Frontend
+- **.NET MAUI**
+
+## Helyi adatbázis
+- **sqlite-net-pcl**
+
+NuGet:
+```powershell
+Install-Package sqlite-net-pcl
+```
+
+## JSON kezelés
+- beépített `System.Text.Json`
+
+## Felolvasás
+- MAUI beépített `TextToSpeech`
+
+## OCR
+- első verzióban inkább **API alapú OCR**
+- vagy külön Windows-only prototípus Tesseracttal
+
+## Fordítás
+- **DeepL API**
+- vagy **Azure Translator**
+
+---
+
+# Javasolt projektfelépítés
+
+## 1. Modellek
+- `VocabularyItem`
+- `QuizQuestion`
+- `QuizResult`
+
+## 2. Service-ek
+- `OcrService`
+- `TranslationService`
+- `VocabularyService`
+- `QuizService`
+- `SpeechService`
+
+## 3. Oldalak
+- `ImportPage`
+- `VocabularyPage`
+- `QuizPage`
+- `ResultsPage`
+- `SettingsPage`
+
+---
+
+# Példa SpeechService MAUI-ban
+```csharp
+using Microsoft.Maui.Media;
+
+public class SpeechService
+{
+    public async Task SpeakAsync(string text, string languageCode)
+    {
+        var locales = await TextToSpeech.Default.GetLocalesAsync();
+        var locale = locales.FirstOrDefault(l => l.Language.StartsWith(languageCode));
+
+        await TextToSpeech.Default.SpeakAsync(text, new SpeechOptions
+        {
+            Locale = locale,
+            Pitch = 1.0f,
+            Volume = 1.0f
+        });
+    }
+}
+```
+
+Használat:
+```csharp
+var speechService = new SpeechService();
+
+await speechService.SpeakAsync("huis", "nl");
+await speechService.SpeakAsync("ház", "hu");
+await speechService.SpeakAsync("Het huis is groot.", "nl");
+```
+
+---
+
+# Amit érdemes figyelembe venni
+
+## 1. OCR nem lesz 100%-os
+Főleg ha:
+- rossz minőségű kép
+- ferde
+- túl kicsi betű
+- díszes font
+
+Ezért legyen szerkeszthető a lista.
+
+## 2. A szavankénti fordítás néha pontatlan
+Ezért jó, ha:
+- az eredeti mondat is megmarad
+- van megjegyzés mező
+- user tud javítani
+
+## 3. A szófaj sem mindig egyértelmű
+Pl. egy szó lehet főnév és ige is különböző helyzetekben.
+
+---
+
+# Igen, ez MAUI-ban működhet
+A konkrét kérdésedre:
+
+## „Lehetne szavanként felolvasni a kiválasztott szót?”
+**Igen.**
+
+## „Lehetne az egész beolvasott szöveget is felolvastatni?”
+**Igen.**
+
+## „Lehet ebből nyelvtanulós, feleletválasztós appot csinálni?”
+**Igen, teljesen.**
+
+---
+
+# Én ezt a fejlesztési sorrendet ajánlanám
+
+## 1. MVP
+- szavak kézi felvitele
+- táblázatos tárolás
+- quiz
+- TTS felolvasás
+
+## 2. Második lépés
+- OCR import képből
+
+## 3. Harmadik lépés
+- automatikus fordítás
+- szófaj felismerés
+
+## 4. Negyedik lépés
+- statisztika
+- hibás szavak ismétlése
+- nehézségi szintek
+
+Ez azért jó, mert így gyorsan lesz működő appod.
+
+---
+
+# Ha akarod, tudok adni neked a következő üzenetben egy konkrét induló MAUI projekttervet is, például:
+
+- milyen NuGet package-ek kellenek
+- milyen mappaszerkezet legyen
+- modellek
+- SQLite példa
+- TextToSpeech példa
+- quiz logika
+- OCR helye a projektben
+
+vagy akár egy **mini működő kódvázat** is.
+
+### USER
+Igen, jöhet egy MAUI példa sqlite db vel
+
+### ASSISTANT
+Persze — itt egy **egyszerű, de használható .NET MAUI + SQLite minta**, amire rá tudod építeni a nyelvtanulós appot.
+
+A példa tudja az alapokat:
+
+- szavak mentése SQLite-ba
+- szavak listázása
+- szó felolvasása
+- egyszerű quiz kérdés generálása
+- eredmény számolása alap logikával
+
+Most egy **MVP**-t adok, amit később bővíthetsz:
+- OCR-rel
+- fordító API-val
+- szófaj felismeréssel
+- teljes szöveg felolvasással
+
+---
+
+# 1. Szükséges NuGet package
+
+A MAUI projektbe telepítsd:
+
+```powershell
+Install-Package sqlite-net-pcl
+```
+
+A felolvasáshoz külön package általában **nem kell**, mert a MAUI-ban beépített a `TextToSpeech`.
+
+---
+
+# 2. Projektstruktúra javaslat
+
+Például:
+
+```text
+YourApp/
+ ├─ Models/
+ │   ├─ VocabularyItem.cs
+ │   └─ QuizQuestion.cs
+ │
+ ├─ Services/
+ │   ├─ DatabaseService.cs
+ │   ├─ VocabularyService.cs
+ │   ├─ QuizService.cs
+ │   └─ SpeechService.cs
+ │
+ ├─ Pages/
+ │   ├─ VocabularyPage.xaml
+ │   └─ QuizPage.xaml
+ │
+ ├─ App.xaml
+ ├─ AppShell.xaml
+ └─ MauiProgram.cs
+```
+
+Most egyszerűség kedvéért megmutatom a fontos fájlokat.
+
+---
+
+# 3. Model: VocabularyItem
+
+## Models/VocabularyItem.cs
+```csharp
+using SQLite;
+
+namespace MauiLanguageApp.Models;
+
+public class VocabularyItem
+{
+    [PrimaryKey, AutoIncrement]
+    public int Id { get; set; }
+
+    public string SourceLanguage { get; set; } = "";   // pl. nl, en, de
+    public string SourceWord { get; set; } = "";       // pl. huis
+    public string TargetWord { get; set; } = "";       // pl. ház
+    public string PartOfSpeech { get; set; } = "";     // pl. főnév
+    public string Note { get; set; } = "";             // megjegyzés
+}
+```
+
+---
+
+# 4. Model: QuizQuestion
+
+## Models/QuizQuestion.cs
+```csharp
+namespace MauiLanguageApp.Models;
+
+public class QuizQuestion
+{
+    public string QuestionWord { get; set; } = "";
+    public string CorrectAnswer { get; set; } = "";
+    public List<string> Options { get; set; } = new();
+}
+```
+
+---
+
+# 5. DatabaseService
+
+Ez kezeli az SQLite adatbázist.
+
+## Services/DatabaseService.cs
+```csharp
+using SQLite;
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Services;
+
+public class DatabaseService
+{
+    private SQLiteAsyncConnection _database;
+
+    public async Task InitAsync()
+    {
+        if (_database != null)
+            return;
+
+        string dbPath = Path.Combine(FileSystem.AppDataDirectory, "vocabulary.db3");
+        _database = new SQLiteAsyncConnection(dbPath);
+
+        await _database.CreateTableAsync<VocabularyItem>();
+    }
+
+    public async Task<List<VocabularyItem>> GetVocabularyAsync()
+    {
+        await InitAsync();
+        return await _database.Table<VocabularyItem>().ToListAsync();
+    }
+
+    public async Task<int> AddWordAsync(VocabularyItem item)
+    {
+        await InitAsync();
+        return await _database.InsertAsync(item);
+    }
+
+    public async Task<int> DeleteWordAsync(VocabularyItem item)
+    {
+        await InitAsync();
+        return await _database.DeleteAsync(item);
+    }
+
+    public async Task<int> UpdateWordAsync(VocabularyItem item)
+    {
+        await InitAsync();
+        return await _database.UpdateAsync(item);
+    }
+}
+```
+
+---
+
+# 6. VocabularyService
+
+Ez lehet egy vékony réteg a DB fölött.
+
+## Services/VocabularyService.cs
+```csharp
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Services;
+
+public class VocabularyService
+{
+    private readonly DatabaseService _databaseService;
+
+    public VocabularyService(DatabaseService databaseService)
+    {
+        _databaseService = databaseService;
+    }
+
+    public Task<List<VocabularyItem>> GetAllAsync()
+        => _databaseService.GetVocabularyAsync();
+
+    public Task<int> AddAsync(VocabularyItem item)
+        => _databaseService.AddWordAsync(item);
+
+    public Task<int> DeleteAsync(VocabularyItem item)
+        => _databaseService.DeleteWordAsync(item);
+
+    public Task<int> UpdateAsync(VocabularyItem item)
+        => _databaseService.UpdateWordAsync(item);
+}
+```
+
+---
+
+# 7. SpeechService
+
+## Services/SpeechService.cs
+```csharp
+using Microsoft.Maui.Media;
+
+namespace MauiLanguageApp.Services;
+
+public class SpeechService
+{
+    public async Task SpeakAsync(string text, string languageCode)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        var locales = await TextToSpeech.Default.GetLocalesAsync();
+        var locale = locales.FirstOrDefault(l =>
+            l.Language.StartsWith(languageCode, StringComparison.OrdinalIgnoreCase));
+
+        await TextToSpeech.Default.SpeakAsync(text, new SpeechOptions
+        {
+            Locale = locale,
+            Pitch = 1.0f,
+            Volume = 1.0f
+        });
+    }
+}
+```
+
+---
+
+# 8. QuizService
+
+## Services/QuizService.cs
+```csharp
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Services;
+
+public class QuizService
+{
+    private readonly Random _random = new();
+
+    public QuizQuestion? GenerateQuestion(List<VocabularyItem> words)
+    {
+        if (words == null || words.Count < 4)
+            return null;
+
+        var correct = words[_random.Next(words.Count)];
+
+        var wrongAnswers = words
+            .Where(x => x.Id != correct.Id)
+            .OrderBy(x => _random.Next())
+            .Take(3)
+            .Select(x => x.TargetWord)
+            .ToList();
+
+        var options = wrongAnswers
+            .Append(correct.TargetWord)
+            .OrderBy(x => _random.Next())
+            .ToList();
+
+        return new QuizQuestion
+        {
+            QuestionWord = correct.SourceWord,
+            CorrectAnswer = correct.TargetWord,
+            Options = options
+        };
+    }
+}
+```
+
+---
+
+# 9. Regisztrálás DI-be
+
+## MauiProgram.cs
+```csharp
+using MauiLanguageApp.Services;
+
+namespace MauiLanguageApp;
+
+public static class MauiProgram
+{
+    public static MauiApp CreateMauiApp()
+    {
+        var builder = MauiApp.CreateBuilder();
+        builder
+            .UseMauiApp<App>();
+
+        builder.Services.AddSingleton<DatabaseService>();
+        builder.Services.AddSingleton<VocabularyService>();
+        builder.Services.AddSingleton<QuizService>();
+        builder.Services.AddSingleton<SpeechService>();
+
+        builder.Services.AddSingleton<MainPage>();
+        builder.Services.AddSingleton<QuizPage>();
+
+        return builder.Build();
+    }
+}
+```
+
+---
+
+# 10. Főoldal: szavak felvitele + lista + felolvasás
+
+Most csináljunk egy egyszerű `MainPage`-et.
+
+## MainPage.xaml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="MauiLanguageApp.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Szótár">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="12">
+
+            <Entry x:Name="SourceLanguageEntry" Placeholder="Forrás nyelv kód (pl. nl)" />
+            <Entry x:Name="SourceWordEntry" Placeholder="Forrás szó" />
+            <Entry x:Name="TargetWordEntry" Placeholder="Magyar szó" />
+            <Entry x:Name="PartOfSpeechEntry" Placeholder="Szófaj (főnév, ige...)" />
+            <Entry x:Name="NoteEntry" Placeholder="Megjegyzés" />
+
+            <Button Text="Mentés" Clicked="OnSaveClicked" />
+            <Button Text="Quiz oldal" Clicked="OnQuizPageClicked" />
+
+            <CollectionView x:Name="VocabularyCollection">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame BorderColor="LightGray" Padding="10" Margin="0,5">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="{Binding SourceWord}" FontAttributes="Bold" FontSize="18" />
+                                <Label Text="{Binding TargetWord}" />
+                                <Label Text="{Binding PartOfSpeech}" />
+                                <Label Text="{Binding Note}" />
+
+                                <HorizontalStackLayout Spacing="10">
+                                    <Button Text="Felolvasás"
+                                            Clicked="OnSpeakClicked"
+                                            CommandParameter="{Binding Id}" />
+                                    <Button Text="Törlés"
+                                            Clicked="OnDeleteClicked"
+                                            CommandParameter="{Binding Id}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
+```
+
+---
+
+## MainPage.xaml.cs
+```csharp
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services;
+
+namespace MauiLanguageApp;
+
+public partial class MainPage : ContentPage
+{
+    private readonly VocabularyService _vocabularyService;
+    private readonly SpeechService _speechService;
+    private List<VocabularyItem> _items = new();
+
+    public MainPage(VocabularyService vocabularyService, SpeechService speechService)
+    {
+        InitializeComponent();
+        _vocabularyService = vocabularyService;
+        _speechService = speechService;
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _items = await _vocabularyService.GetAllAsync();
+        VocabularyCollection.ItemsSource = null;
+        VocabularyCollection.ItemsSource = _items;
+    }
+
+    private async void OnSaveClicked(object sender, EventArgs e)
+    {
+        var item = new VocabularyItem
+        {
+            SourceLanguage = SourceLanguageEntry.Text ?? "",
+            SourceWord = SourceWordEntry.Text ?? "",
+            TargetWord = TargetWordEntry.Text ?? "",
+            PartOfSpeech = PartOfSpeechEntry.Text ?? "",
+            Note = NoteEntry.Text ?? ""
+        };
+
+        if (string.IsNullOrWhiteSpace(item.SourceWord) || string.IsNullOrWhiteSpace(item.TargetWord))
+        {
+            await DisplayAlert("Hiba", "A forrás szó és a magyar szó kötelező.", "OK");
+            return;
+        }
+
+        await _vocabularyService.AddAsync(item);
+
+        SourceLanguageEntry.Text = "";
+        SourceWordEntry.Text = "";
+        TargetWordEntry.Text = "";
+        PartOfSpeechEntry.Text = "";
+        NoteEntry.Text = "";
+
+        await LoadDataAsync();
+    }
+
+    private async void OnDeleteClicked(object sender, EventArgs e)
+    {
+        if (sender is Button button && button.CommandParameter is int id)
+        {
+            var item = _items.FirstOrDefault(x => x.Id == id);
+            if (item != null)
+            {
+                await _vocabularyService.DeleteAsync(item);
+                await LoadDataAsync();
+            }
+        }
+    }
+
+    private async void OnSpeakClicked(object sender, EventArgs e)
+    {
+        if (sender is Button button && button.CommandParameter is int id)
+        {
+            var item = _items.FirstOrDefault(x => x.Id == id);
+            if (item != null)
+            {
+                var languageCode = string.IsNullOrWhiteSpace(item.SourceLanguage) ? "en" : item.SourceLanguage;
+                await _speechService.SpeakAsync(item.SourceWord, languageCode);
+            }
+        }
+    }
+
+    private async void OnQuizPageClicked(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new QuizPage(
+            _vocabularyService,
+            Handler.MauiContext.Services.GetService<QuizService>()!,
+            _speechService));
+    }
+}
+```
+
+---
+
+# 11. Quiz oldal
+
+## QuizPage.xaml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="MauiLanguageApp.QuizPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Quiz">
+
+    <VerticalStackLayout Padding="20" Spacing="15">
+        <Label Text="Mit jelent ez a szó?" FontSize="20" />
+        <Label x:Name="QuestionLabel" FontSize="28" FontAttributes="Bold" />
+
+        <Button x:Name="SpeakButton" Text="Felolvasás" Clicked="OnSpeakClicked" />
+
+        <Button x:Name="Option1Button" Clicked="OnOptionClicked" />
+        <Button x:Name="Option2Button" Clicked="OnOptionClicked" />
+        <Button x:Name="Option3Button" Clicked="OnOptionClicked" />
+        <Button x:Name="Option4Button" Clicked="OnOptionClicked" />
+
+        <Label x:Name="ResultLabel" FontSize="18" TextColor="Blue" />
+        <Label x:Name="ScoreLabel" FontSize="18" />
+        <Button Text="Következő kérdés" Clicked="OnNextClicked" />
+    </VerticalStackLayout>
+</ContentPage>
+```
+
+---
+
+## QuizPage.xaml.cs
+```csharp
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services;
+
+namespace MauiLanguageApp;
+
+public partial class QuizPage : ContentPage
+{
+    private readonly VocabularyService _vocabularyService;
+    private readonly QuizService _quizService;
+    private readonly SpeechService _speechService;
+
+    private List<VocabularyItem> _words = new();
+    private QuizQuestion? _currentQuestion;
+
+    private int _correctCount = 0;
+    private int _totalCount = 0;
+
+    public QuizPage(
+        VocabularyService vocabularyService,
+        QuizService quizService,
+        SpeechService speechService)
+    {
+        InitializeComponent();
+        _vocabularyService = vocabularyService;
+        _quizService = quizService;
+        _speechService = speechService;
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        _words = await _vocabularyService.GetAllAsync();
+
+        if (_words.Count < 4)
+        {
+            await DisplayAlert("Kevés szó", "Legalább 4 szó kell a quizhez.", "OK");
+            await Navigation.PopAsync();
+            return;
+        }
+
+        LoadNextQuestion();
+    }
+
+    private void LoadNextQuestion()
+    {
+        _currentQuestion = _quizService.GenerateQuestion(_words);
+
+        if (_currentQuestion == null)
+            return;
+
+        QuestionLabel.Text = _currentQuestion.QuestionWord;
+
+        Option1Button.Text = _currentQuestion.Options[0];
+        Option2Button.Text = _currentQuestion.Options[1];
+        Option3Button.Text = _currentQuestion.Options[2];
+        Option4Button.Text = _currentQuestion.Options[3];
+
+        ResultLabel.Text = "";
+        ScoreLabel.Text = $"Eddig: {_correctCount}/{_totalCount}";
+    }
+
+    private async void OnSpeakClicked(object sender, EventArgs e)
+    {
+        if (_currentQuestion == null)
+            return;
+
+        var word = _words.FirstOrDefault(x => x.SourceWord == _currentQuestion.QuestionWord);
+        var lang = word?.SourceLanguage ?? "en";
+
+        await _speechService.SpeakAsync(_currentQuestion.QuestionWord, lang);
+    }
+
+    private void OnOptionClicked(object sender, EventArgs e)
+    {
+        if (_currentQuestion == null)
+            return;
+
+        if (sender is Button button)
+        {
+            _totalCount++;
+
+            if (button.Text == _currentQuestion.CorrectAnswer)
+            {
+                _correctCount++;
+                ResultLabel.Text = "Helyes!";
+                ResultLabel.TextColor = Colors.Green;
+            }
+            else
+            {
+                ResultLabel.Text = $"Hibás! Helyes válasz: {_currentQuestion.CorrectAnswer}";
+                ResultLabel.TextColor = Colors.Red;
+            }
+
+            ScoreLabel.Text = $"Eddig: {_correctCount}/{_totalCount}";
+        }
+    }
+
+    private void OnNextClicked(object sender, EventArgs e)
+    {
+        LoadNextQuestion();
+    }
+}
+```
+
+---
+
+# 12. App.xaml.cs
+
+Navigation miatt legyen NavigationPage.
+
+## App.xaml.cs
+```csharp
+namespace MauiLanguageApp;
+
+public partial class App : Application
+{
+    public App(MainPage mainPage)
+    {
+        InitializeComponent();
+        MainPage = new NavigationPage(mainPage);
+    }
+}
+```
+
+---
+
+# 13. Ez már mit tud?
+
+Ez az alap példa már tudja:
+
+## Szó felvitele
+- nyelvkód
+- idegen szó
+- magyar fordítás
+- szófaj
+- megjegyzés
+
+## Mentés SQLite-ba
+Adataid megmaradnak.
+
+## Lista
+Kiírja a mentett szavakat.
+
+## Szó felolvasása
+A forrásnyelv alapján próbálja felolvasni.
+
+## Quiz
+- 1 szó
+- 4 válaszlehetőség
+- helyes/hibás visszajelzés
+- futó pontszám
+
+---
+
+# 14. Amit érdemes rögtön javítani ebben a mintában
+
+## A) DI-s Navigation tisztábban
+A `Handler.MauiContext.Services.GetService<QuizService>()` működhet, de szebb lenne teljes DI-vel oldani.
+
+Ha akarod, adok utána **MVVM-es, tisztább verziót** is.
+
+## B) Szerkesztés
+Most csak:
+- hozzáadás
+- törlés
+
+de könnyen bővíthető szerkesztéssel.
+
+## C) Quiz ismétlődés
+Most véletlen kérdéseket dob. Később lehet:
+- ne ismételje ugyanazt túl gyakran
+- hibásakat rakja előre
+- szófaj szerint szűrjön
+
+---
+
+# 15. Hogyan bővítsd OCR-rel?
+
+A következő lépés lehet egy `OcrService`, ami:
+- képet kiválaszt
+- OCR-oz
+- szétbontja szavakra
+- kiszűri a névelőket
+- ideiglenes listát csinál
+- user átnézi
+- mentés DB-be
+
+Ehhez MAUI-ban majd kellhet:
+- `MediaPicker`
+- vagy fájlválasztó
+- OCR API vagy külső OCR service
+
+---
+
+# 16. Hogyan bővítsd teljes szöveg felolvasással?
+
+A `SpeechService` már most is tudja, mert nem csak szóra jó:
+
+```csharp
+await _speechService.SpeakAsync("Het huis is groot. De man loopt naar school.", "nl");
+```
+
+Szóval ugyanazzal a metódussal:
+- egy szót
+- egy mondatot
+- egy teljes OCR szöveget is fel tudsz olvastatni
+
+---
+
+# 17. Nyelvkód példák
+A `SourceLanguage` mezőbe ilyesmit ments:
+
+- `nl` = holland
+- `en` = angol
+- `de` = német
+- `hu` = magyar
+- `fr` = francia
+- `es` = spanyol
+
+---
+
+# 18. Javasolt következő bővítések
+Ha ebből tényleg appot akarsz csinálni, ezeket csinálnám sorban:
+
+## 1.
+szó szerkesztés
+
+## 2.
+szűrés nyelv szerint
+
+## 3.
+quiz irány:
+- Holland → Magyar
+- Magyar → Holland
+
+## 4.
+statisztika:
+- helyes
+- hibás
+- utoljára mikor ment
+- nehéz szavak
+
+## 5.
+OCR import
+
+## 6.
+automatikus fordítás API-val
+
+## 7.
+szófaj automatikus kitöltése
+
+---
+
+# 19. Nagyon fontos MAUI megjegyzés
+Android/iOS alatt a TTS elérhető, de:
+- az adott nyelv hangja telepítve kell legyen a készüléken
+- ha nincs holland hang telepítve, lehet hogy fallback hangot használ
+
+Tehát a kód jó lehet, de az eszköz oldali támogatás is számít.
+
+---
+
+# 20. Ha akarod, következőre tudok adni még egyet ezek közül:
+
+## Opció A
+egy **tisztább MVVM verziót**
+
+## Opció B
+egy **teljes CRUD + Edit oldalt**
+
+## Opció C
+egy **OCR import oldalt képkiválasztással**
+
+## Opció D
+egy **kész SQLites MAUI projekt vázat több fájlra bontva**
+
+Ha akarod, a következő üzenetben megcsinálom a **tisztább MVVM + CRUD verziót**, mert hosszabb távon az lesz a jobb alap.
+
+### USER
+Igen kérem az MVVm-es megoldást a Solid programozási elvek betartásával tejes CRUD, SQlite, OCR import.
+
+### ASSISTANT
+Szuper. Az alábbi megoldás egy **MAUI + MVVM + SQLite + OCR import** alap, **SOLID szemlélettel** felépítve.
+
+Célok:
+- **MVVM**
+- **teljes CRUD**
+- **SQLite**
+- **OCR import**
+- bővíthető architektúra
+- külön szolgáltatások és interfészek
+
+Fontos: az OCR résznél most egy **interfész + mock/placeholder + bővítési pont** megoldást adok, mert MAUI-ban a natív OCR platformfüggő. Emellé mutatok egy **API-alapú OCR service** vázat is, amit könnyű bekötni.
+
+---
+
+# 1. Architektúra
+
+## Rétegek
+- **Models** – adatmodellek
+- **Data** – repository + SQLite
+- **Services** – OCR, TTS, file picker, quiz, stb.
+- **ViewModels** – UI logika
+- **Views** – XAML oldalak
+
+## SOLID röviden hogyan érvényesül
+- **S**: minden osztálynak egy fő feladata van
+- **O**: interfészeken keresztül bővíthető
+- **L**: implementációk cserélhetők
+- **I**: kicsi, célzott interfészek
+- **D**: ViewModel interfészekre függ, nem konkrét osztályokra
+
+---
+
+# 2. NuGet package-ek
+
+Telepítsd ezeket:
+
+```powershell
+Install-Package sqlite-net-pcl
+Install-Package CommunityToolkit.Mvvm
+```
+
+OCR-hez később:
+- ha API-s: nem kell extra package, elég a `HttpClient`
+- ha helyi OCR: platformtól függ
+
+---
+
+# 3. Projektstruktúra
+
+```text
+MauiLanguageApp/
+ ├─ Models/
+ │   ├─ VocabularyItem.cs
+ │   └─ OcrImportResult.cs
+ │
+ ├─ Data/
+ │   ├─ Interfaces/
+ │   │   └─ IVocabularyRepository.cs
+ │   └─ VocabularyRepository.cs
+ │
+ ├─ Services/
+ │   ├─ Interfaces/
+ │   │   ├─ IDatabaseService.cs
+ │   │   ├─ IOcrService.cs
+ │   │   ├─ ISpeechService.cs
+ │   │   └─ IFilePickerService.cs
+ │   ├─ DatabaseService.cs
+ │   ├─ MockOcrService.cs
+ │   ├─ ApiOcrService.cs
+ │   ├─ SpeechService.cs
+ │   └─ FilePickerService.cs
+ │
+ ├─ ViewModels/
+ │   ├─ BaseViewModel.cs
+ │   ├─ VocabularyListViewModel.cs
+ │   ├─ VocabularyEditViewModel.cs
+ │   └─ ImportViewModel.cs
+ │
+ ├─ Views/
+ │   ├─ VocabularyListPage.xaml
+ │   ├─ VocabularyEditPage.xaml
+ │   └─ ImportPage.xaml
+ │
+ ├─ AppShell.xaml
+ ├─ App.xaml.cs
+ └─ MauiProgram.cs
+```
+
+---
+
+# 4. Modellek
+
+## Models/VocabularyItem.cs
+```csharp
+using SQLite;
+
+namespace MauiLanguageApp.Models;
+
+public class VocabularyItem
+{
+    [PrimaryKey, AutoIncrement]
+    public int Id { get; set; }
+
+    public string SourceLanguage { get; set; } = "";   // nl, en, de...
+    public string SourceWord { get; set; } = "";
+    public string TargetLanguage { get; set; } = "hu";
+    public string TargetWord { get; set; } = "";
+
+    public string PartOfSpeech { get; set; } = "";     // főnév, ige...
+    public string Note { get; set; } = "";
+
+    public string SourceText { get; set; } = "";       // eredeti OCR szöveg/részlet
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAtUtc { get; set; }
+}
+```
+
+## Models/OcrImportResult.cs
+```csharp
+namespace MauiLanguageApp.Models;
+
+public class OcrImportResult
+{
+    public string RawText { get; set; } = "";
+    public List<string> Words { get; set; } = new();
+}
+```
+
+---
+
+# 5. Data réteg
+
+## Data/Interfaces/IVocabularyRepository.cs
+```csharp
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Data.Interfaces;
+
+public interface IVocabularyRepository
+{
+    Task<List<VocabularyItem>> GetAllAsync();
+    Task<VocabularyItem?> GetByIdAsync(int id);
+    Task<List<VocabularyItem>> SearchAsync(string searchTerm);
+    Task<int> AddAsync(VocabularyItem item);
+    Task<int> UpdateAsync(VocabularyItem item);
+    Task<int> DeleteAsync(int id);
+}
+```
+
+---
+
+# 6. SQLite DB service
+
+## Services/Interfaces/IDatabaseService.cs
+```csharp
+using SQLite;
+
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface IDatabaseService
+{
+    Task<SQLiteAsyncConnection> GetConnectionAsync();
+}
+```
+
+## Services/DatabaseService.cs
+```csharp
+using SQLite;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class DatabaseService : IDatabaseService
+{
+    private SQLiteAsyncConnection? _connection;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+
+    public async Task<SQLiteAsyncConnection> GetConnectionAsync()
+    {
+        if (_connection != null)
+            return _connection;
+
+        await _semaphore.WaitAsync();
+        try
+        {
+            if (_connection == null)
+            {
+                var dbPath = Path.Combine(FileSystem.AppDataDirectory, "languageapp.db3");
+                _connection = new SQLiteAsyncConnection(dbPath);
+                await _connection.CreateTableAsync<Models.VocabularyItem>();
+            }
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+
+        return _connection;
+    }
+}
+```
+
+---
+
+# 7. Repository implementáció
+
+## Data/VocabularyRepository.cs
+```csharp
+using MauiLanguageApp.Data.Interfaces;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Data;
+
+public class VocabularyRepository : IVocabularyRepository
+{
+    private readonly IDatabaseService _databaseService;
+
+    public VocabularyRepository(IDatabaseService databaseService)
+    {
+        _databaseService = databaseService;
+    }
+
+    public async Task<List<VocabularyItem>> GetAllAsync()
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        return await db.Table<VocabularyItem>()
+                       .OrderBy(x => x.SourceWord)
+                       .ToListAsync();
+    }
+
+    public async Task<VocabularyItem?> GetByIdAsync(int id)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        return await db.Table<VocabularyItem>()
+                       .FirstOrDefaultAsync(x => x.Id == id);
+    }
+
+    public async Task<List<VocabularyItem>> SearchAsync(string searchTerm)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            return await GetAllAsync();
+
+        searchTerm = searchTerm.Trim().ToLower();
+
+        var all = await db.Table<VocabularyItem>().ToListAsync();
+
+        return all.Where(x =>
+                x.SourceWord.ToLower().Contains(searchTerm) ||
+                x.TargetWord.ToLower().Contains(searchTerm) ||
+                x.PartOfSpeech.ToLower().Contains(searchTerm) ||
+                x.Note.ToLower().Contains(searchTerm))
+            .OrderBy(x => x.SourceWord)
+            .ToList();
+    }
+
+    public async Task<int> AddAsync(VocabularyItem item)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        item.CreatedAtUtc = DateTime.UtcNow;
+        item.UpdatedAtUtc = null;
+        return await db.InsertAsync(item);
+    }
+
+    public async Task<int> UpdateAsync(VocabularyItem item)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        item.UpdatedAtUtc = DateTime.UtcNow;
+        return await db.UpdateAsync(item);
+    }
+
+    public async Task<int> DeleteAsync(int id)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        var entity = await GetByIdAsync(id);
+        if (entity == null)
+            return 0;
+
+        return await db.DeleteAsync(entity);
+    }
+}
+```
+
+---
+
+# 8. OCR service interfész
+
+## Services/Interfaces/IOcrService.cs
+```csharp
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface IOcrService
+{
+    Task<OcrImportResult> ExtractTextAsync(string filePath, string languageCode);
+}
+```
+
+---
+
+# 9. Mock OCR service
+Fejlesztéshez tökéletes. Később lecserélhető API-s vagy natív OCR-re.
+
+## Services/MockOcrService.cs
+```csharp
+using System.Text.RegularExpressions;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class MockOcrService : IOcrService
+{
+    public Task<OcrImportResult> ExtractTextAsync(string filePath, string languageCode)
+    {
+        string rawText = """
+        Het huis is groot. De man loopt naar school.
+        Een kind leest een boek.
+        """;
+
+        var excluded = GetExcludedWords(languageCode);
+
+        var words = Regex.Matches(rawText, @"\p{L}+")
+            .Select(m => m.Value.Trim())
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .Where(w => !excluded.Contains(w, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        return Task.FromResult(new OcrImportResult
+        {
+            RawText = rawText,
+            Words = words
+        });
+    }
+
+    private static List<string> GetExcludedWords(string languageCode)
+    {
+        return languageCode.ToLower() switch
+        {
+            "nl" => new() { "de", "het", "een" },
+            "en" => new() { "the", "a", "an" },
+            "de" => new() { "der", "die", "das", "ein", "eine" },
+            "hu" => new() { "a", "az" },
+            _ => new()
+        };
+    }
+}
+```
+
+---
+
+# 10. API OCR service váz
+Ha OCR API-t akarsz használni, ide kerül.
+
+## Services/ApiOcrService.cs
+```csharp
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class ApiOcrService : IOcrService
+{
+    private readonly HttpClient _httpClient;
+
+    public ApiOcrService(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<OcrImportResult> ExtractTextAsync(string filePath, string languageCode)
+    {
+        // Itt olvasod be a fájlt és küldöd OCR API-nak.
+        // Most csak mintahelykitöltő:
+        var bytes = await File.ReadAllBytesAsync(filePath);
+
+        // Például multipart/form-data vagy base64 kérés lehet.
+        // A konkrét API-tól függ.
+        var base64 = Convert.ToBase64String(bytes);
+
+        var payload = new
+        {
+            imageBase64 = base64,
+            language = languageCode
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Példa endpoint
+        // var response = await _httpClient.PostAsync("https://your-ocr-api/ocr", content);
+        // response.EnsureSuccessStatusCode();
+        // var responseJson = await response.Content.ReadAsStringAsync();
+
+        // TODO: API válasz parse
+        string rawText = "Mockolt API OCR válasz szövege";
+
+        var words = Regex.Matches(rawText, @"\p{L}+")
+            .Select(m => m.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return new OcrImportResult
+        {
+            RawText = rawText,
+            Words = words
+        };
+    }
+}
+```
+
+---
+
+# 11. File picker service
+
+## Services/Interfaces/IFilePickerService.cs
+```csharp
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface IFilePickerService
+{
+    Task<string?> PickImageAsync();
+}
+```
+
+## Services/FilePickerService.cs
+```csharp
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class FilePickerService : IFilePickerService
+{
+    public async Task<string?> PickImageAsync()
+    {
+        var result = await FilePicker.Default.PickAsync(new PickOptions
+        {
+            PickerTitle = "Válassz képfájlt",
+            FileTypes = FilePickerFileType.Images
+        });
+
+        return result?.FullPath;
+    }
+}
+```
+
+---
+
+# 12. Speech service
+
+## Services/Interfaces/ISpeechService.cs
+```csharp
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface ISpeechService
+{
+    Task SpeakAsync(string text, string languageCode);
+}
+```
+
+## Services/SpeechService.cs
+```csharp
+using Microsoft.Maui.Media;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class SpeechService : ISpeechService
+{
+    public async Task SpeakAsync(string text, string languageCode)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        var locales = await TextToSpeech.Default.GetLocalesAsync();
+        var locale = locales.FirstOrDefault(l =>
+            l.Language.StartsWith(languageCode, StringComparison.OrdinalIgnoreCase));
+
+        await TextToSpeech.Default.SpeakAsync(text, new SpeechOptions
+        {
+            Locale = locale,
+            Pitch = 1.0f,
+            Volume = 1.0f
+        });
+    }
+}
+```
+
+---
+
+# 13. BaseViewModel
+
+## ViewModels/BaseViewModel.cs
+```csharp
+using CommunityToolkit.Mvvm.ComponentModel;
+
+namespace MauiLanguageApp.ViewModels;
+
+public partial class BaseViewModel : ObservableObject
+{
+    [ObservableProperty]
+    private bool isBusy;
+
+    [ObservableProperty]
+    private string title = string.Empty;
+}
+```
+
+---
+
+# 14. Vocabulary list ViewModel
+
+## ViewModels/VocabularyListViewModel.cs
+```csharp
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MauiLanguageApp.Data.Interfaces;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.ViewModels;
+
+public partial class VocabularyListViewModel : BaseViewModel
+{
+    private readonly IVocabularyRepository _repository;
+    private readonly ISpeechService _speechService;
+
+    public ObservableCollection<VocabularyItem> Items { get; } = new();
+
+    [ObservableProperty]
+    private string searchText = string.Empty;
+
+    public VocabularyListViewModel(
+        IVocabularyRepository repository,
+        ISpeechService speechService)
+    {
+        _repository = repository;
+        _speechService = speechService;
+        Title = "Szótár";
+    }
+
+    [RelayCommand]
+    public async Task LoadAsync()
+    {
+        if (IsBusy) return;
+
+        try
+        {
+            IsBusy = true;
+            Items.Clear();
+
+            var items = string.IsNullOrWhiteSpace(SearchText)
+                ? await _repository.GetAllAsync()
+                : await _repository.SearchAsync(SearchText);
+
+            foreach (var item in items)
+                Items.Add(item);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task SearchAsync()
+    {
+        await LoadAsync();
+    }
+
+    [RelayCommand]
+    public async Task DeleteAsync(VocabularyItem? item)
+    {
+        if (item == null) return;
+
+        await _repository.DeleteAsync(item.Id);
+        Items.Remove(item);
+    }
+
+    [RelayCommand]
+    public async Task SpeakAsync(VocabularyItem? item)
+    {
+        if (item == null) return;
+
+        await _speechService.SpeakAsync(item.SourceWord, item.SourceLanguage);
+    }
+}
+```
+
+---
+
+# 15. Vocabulary edit ViewModel
+
+## ViewModels/VocabularyEditViewModel.cs
+```csharp
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MauiLanguageApp.Data.Interfaces;
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.ViewModels;
+
+[QueryProperty(nameof(ItemId), "id")]
+public partial class VocabularyEditViewModel : BaseViewModel
+{
+    private readonly IVocabularyRepository _repository;
+
+    [ObservableProperty]
+    private int itemId;
+
+    [ObservableProperty]
+    private string sourceLanguage = "nl";
+
+    [ObservableProperty]
+    private string sourceWord = string.Empty;
+
+    [ObservableProperty]
+    private string targetLanguage = "hu";
+
+    [ObservableProperty]
+    private string targetWord = string.Empty;
+
+    [ObservableProperty]
+    private string partOfSpeech = string.Empty;
+
+    [ObservableProperty]
+    private string note = string.Empty;
+
+    [ObservableProperty]
+    private string sourceText = string.Empty;
+
+    public bool IsEditMode => ItemId > 0;
+
+    public VocabularyEditViewModel(IVocabularyRepository repository)
+    {
+        _repository = repository;
+        Title = "Új szó";
+    }
+
+    partial void OnItemIdChanged(int value)
+    {
+        MainThread.BeginInvokeOnMainThread(async () => await LoadItemAsync(value));
+    }
+
+    private async Task LoadItemAsync(int id)
+    {
+        if (id <= 0) return;
+
+        var item = await _repository.GetByIdAsync(id);
+        if (item == null) return;
+
+        SourceLanguage = item.SourceLanguage;
+        SourceWord = item.SourceWord;
+        TargetLanguage = item.TargetLanguage;
+        TargetWord = item.TargetWord;
+        PartOfSpeech = item.PartOfSpeech;
+        Note = item.Note;
+        SourceText = item.SourceText;
+        Title = "Szó szerkesztése";
+        OnPropertyChanged(nameof(IsEditMode));
+    }
+
+    [RelayCommand]
+    public async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SourceWord) || string.IsNullOrWhiteSpace(TargetWord))
+        {
+            await Shell.Current.DisplayAlert("Hiba", "A forrás és célszó kötelező.", "OK");
+            return;
+        }
+
+        if (ItemId > 0)
+        {
+            var existing = await _repository.GetByIdAsync(ItemId);
+            if (existing == null) return;
+
+            existing.SourceLanguage = SourceLanguage;
+            existing.SourceWord = SourceWord;
+            existing.TargetLanguage = TargetLanguage;
+            existing.TargetWord = TargetWord;
+            existing.PartOfSpeech = PartOfSpeech;
+            existing.Note = Note;
+            existing.SourceText = SourceText;
+
+            await _repository.UpdateAsync(existing);
+        }
+        else
+        {
+            await _repository.AddAsync(new VocabularyItem
+            {
+                SourceLanguage = SourceLanguage,
+                SourceWord = SourceWord,
+                TargetLanguage = TargetLanguage,
+                TargetWord = TargetWord,
+                PartOfSpeech = PartOfSpeech,
+                Note = Note,
+                SourceText = SourceText
+            });
+        }
+
+        await Shell.Current.GoToAsync("..");
+    }
+}
+```
+
+---
+
+# 16. Import ViewModel
+
+Ez végzi:
+- kép kiválasztása
+- OCR
+- szólista előállítása
+- egyenként mentés
+
+## ViewModels/ImportViewModel.cs
+```csharp
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MauiLanguageApp.Data.Interfaces;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.ViewModels;
+
+public partial class ImportViewModel : BaseViewModel
+{
+    private readonly IFilePickerService _filePickerService;
+    private readonly IOcrService _ocrService;
+    private readonly IVocabularyRepository _repository;
+
+    [ObservableProperty]
+    private string selectedFilePath = string.Empty;
+
+    [ObservableProperty]
+    private string sourceLanguage = "nl";
+
+    [ObservableProperty]
+    private string targetLanguage = "hu";
+
+    [ObservableProperty]
+    private string rawText = string.Empty;
+
+    public ObservableCollection<VocabularyItem> ImportedItems { get; } = new();
+
+    public ImportViewModel(
+        IFilePickerService filePickerService,
+        IOcrService ocrService,
+        IVocabularyRepository repository)
+    {
+        _filePickerService = filePickerService;
+        _ocrService = ocrService;
+        _repository = repository;
+        Title = "OCR Import";
+    }
+
+    [RelayCommand]
+    public async Task PickImageAsync()
+    {
+        var path = await _filePickerService.PickImageAsync();
+        if (!string.IsNullOrWhiteSpace(path))
+            SelectedFilePath = path;
+    }
+
+    [RelayCommand]
+    public async Task ImportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedFilePath))
+        {
+            await Shell.Current.DisplayAlert("Hiba", "Nincs kiválasztott képfájl.", "OK");
+            return;
+        }
+
+        ImportedItems.Clear();
+
+        var result = await _ocrService.ExtractTextAsync(SelectedFilePath, SourceLanguage);
+        RawText = result.RawText;
+
+        foreach (var word in result.Words)
+        {
+            ImportedItems.Add(new VocabularyItem
+            {
+                SourceLanguage = SourceLanguage,
+                TargetLanguage = TargetLanguage,
+                SourceWord = word,
+                TargetWord = "",
+                PartOfSpeech = "",
+                Note = "",
+                SourceText = result.RawText
+            });
+        }
+    }
+
+    [RelayCommand]
+    public async Task SaveImportedAsync()
+    {
+        var validItems = ImportedItems
+            .Where(x => !string.IsNullOrWhiteSpace(x.SourceWord))
+            .ToList();
+
+        foreach (var item in validItems)
+        {
+            await _repository.AddAsync(item);
+        }
+
+        await Shell.Current.DisplayAlert("Mentve", $"{validItems.Count} szó elmentve.", "OK");
+        await Shell.Current.GoToAsync("..");
+    }
+
+    [RelayCommand]
+    public void RemoveImportedItem(VocabularyItem? item)
+    {
+        if (item == null) return;
+        ImportedItems.Remove(item);
+    }
+}
+```
+
+---
+
+# 17. Nézetek
+
+## Views/VocabularyListPage.xaml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="MauiLanguageApp.Views.VocabularyListPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="{Binding Title}">
+
+    <VerticalStackLayout Padding="16" Spacing="10">
+        <SearchBar Placeholder="Keresés"
+                   Text="{Binding SearchText}" />
+        
+        <HorizontalStackLayout Spacing="10">
+            <Button Text="Keresés" Command="{Binding SearchCommand}" />
+            <Button Text="Új szó" Clicked="OnAddClicked" />
+            <Button Text="OCR import" Clicked="OnImportClicked" />
+        </HorizontalStackLayout>
+
+        <CollectionView ItemsSource="{Binding Items}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Padding="10" Margin="0,6">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding SourceWord}" FontAttributes="Bold" FontSize="18" />
+                            <Label Text="{Binding TargetWord}" />
+                            <Label Text="{Binding PartOfSpeech}" />
+                            <Label Text="{Binding Note}" />
+
+                            <HorizontalStackLayout Spacing="8">
+                                <Button Text="Szerkesztés" Clicked="OnEditClicked" CommandParameter="{Binding Id}" />
+                                <Button Text="Felolvasás" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SpeakCommand}" CommandParameter="{Binding .}" />
+                                <Button Text="Törlés" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteCommand}" CommandParameter="{Binding .}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentPage>
+```
+
+## Views/VocabularyListPage.xaml.cs
+```csharp
+using MauiLanguageApp.ViewModels;
+
+namespace MauiLanguageApp.Views;
+
+public partial class VocabularyListPage : ContentPage
+{
+    private readonly VocabularyListViewModel _viewModel;
+
+    public VocabularyListPage(VocabularyListViewModel viewModel)
+    {
+        InitializeComponent();
+        BindingContext = _viewModel = viewModel;
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await _viewModel.LoadAsync();
+    }
+
+    private async void OnAddClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(VocabularyEditPage));
+    }
+
+    private async void OnImportClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(ImportPage));
+    }
+
+    private async void OnEditClicked(object sender, EventArgs e)
+    {
+        if (sender is Button button && button.CommandParameter is int id)
+        {
+            await Shell.Current.GoToAsync($"{nameof(VocabularyEditPage)}?id={id}");
+        }
+    }
+}
+```
+
+---
+
+## Views/VocabularyEditPage.xaml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="MauiLanguageApp.Views.VocabularyEditPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="{Binding Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Entry Placeholder="Forrás nyelv (pl. nl)" Text="{Binding SourceLanguage}" />
+            <Entry Placeholder="Forrás szó" Text="{Binding SourceWord}" />
+            <Entry Placeholder="Cél nyelv (pl. hu)" Text="{Binding TargetLanguage}" />
+            <Entry Placeholder="Fordítás" Text="{Binding TargetWord}" />
+            <Entry Placeholder="Szófaj" Text="{Binding PartOfSpeech}" />
+            <Editor Placeholder="Megjegyzés" Text="{Binding Note}" AutoSize="TextChanges" />
+            <Editor Placeholder="Eredeti szöveg" Text="{Binding SourceText}" AutoSize="TextChanges" HeightRequest="120" />
+            <Button Text="Mentés" Command="{Binding SaveCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
+```
+
+## Views/VocabularyEditPage.xaml.cs
+```csharp
+using MauiLanguageApp.ViewModels;
+
+namespace MauiLanguageApp.Views;
+
+public partial class VocabularyEditPage : ContentPage
+{
+    public VocabularyEditPage(VocabularyEditViewModel viewModel)
+    {
+        InitializeComponent();
+        BindingContext = viewModel;
+    }
+}
+```
+
+---
+
+## Views/ImportPage.xaml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="MauiLanguageApp.Views.ImportPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="{Binding Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Entry Placeholder="Forrás nyelv (pl. nl)" Text="{Binding SourceLanguage}" />
+            <Entry Placeholder="Cél nyelv (pl. hu)" Text="{Binding TargetLanguage}" />
+
+            <Button Text="Kép kiválasztása" Command="{Binding PickImageCommand}" />
+            <Label Text="{Binding SelectedFilePath}" FontSize="12" />
+
+            <Button Text="OCR import" Command="{Binding ImportCommand}" />
+
+            <Label Text="Felismerett szöveg:" FontAttributes="Bold" />
+            <Editor Text="{Binding RawText}" HeightRequest="120" AutoSize="TextChanges" />
+
+            <Label Text="Importált szavak:" FontAttributes="Bold" />
+
+            <CollectionView ItemsSource="{Binding ImportedItems}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Padding="10" Margin="0,4">
+                            <VerticalStackLayout>
+                                <Entry Placeholder="Forrás szó" Text="{Binding SourceWord}" />
+                                <Entry Placeholder="Fordítás" Text="{Binding TargetWord}" />
+                                <Entry Placeholder="Szófaj" Text="{Binding PartOfSpeech}" />
+                                <Entry Placeholder="Megjegyzés" Text="{Binding Note}" />
+                                <Button Text="Eltávolítás"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveImportedItemCommand}"
+                                        CommandParameter="{Binding .}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="Importált elemek mentése" Command="{Binding SaveImportedCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
+```
+
+## Views/ImportPage.xaml.cs
+```csharp
+using MauiLanguageApp.ViewModels;
+
+namespace MauiLanguageApp.Views;
+
+public partial class ImportPage : ContentPage
+{
+    public ImportPage(ImportViewModel viewModel)
+    {
+        InitializeComponent();
+        BindingContext = viewModel;
+    }
+}
+```
+
+---
+
+# 18. Shell és routing
+
+## AppShell.xaml
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="MauiLanguageApp.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:MauiLanguageApp.Views">
+
+    <ShellContent
+        Title="Szótár"
+        ContentTemplate="{DataTemplate views:VocabularyListPage}"
+        Route="VocabularyListPage" />
+</Shell>
+```
+
+## AppShell.xaml.cs
+```csharp
+using MauiLanguageApp.Views;
+
+namespace MauiLanguageApp;
+
+public partial class AppShell : Shell
+{
+    public AppShell()
+    {
+        InitializeComponent();
+
+        Routing.RegisterRoute(nameof(VocabularyEditPage), typeof(VocabularyEditPage));
+        Routing.RegisterRoute(nameof(ImportPage), typeof(ImportPage));
+    }
+}
+```
+
+---
+
+# 19. App.xaml.cs
+
+```csharp
+namespace MauiLanguageApp;
+
+public partial class App : Application
+{
+    public App(AppShell shell)
+    {
+        InitializeComponent();
+        MainPage = shell;
+    }
+}
+```
+
+---
+
+# 20. MauiProgram.cs
+
+```csharp
+using MauiLanguageApp.Data;
+using MauiLanguageApp.Data.Interfaces;
+using MauiLanguageApp.Services;
+using MauiLanguageApp.Services.Interfaces;
+using MauiLanguageApp.ViewModels;
+using MauiLanguageApp.Views;
+
+namespace MauiLanguageApp;
+
+public static class MauiProgram
+{
+    public static MauiApp CreateMauiApp()
+    {
+        var builder = MauiApp.CreateBuilder();
+
+        builder
+            .UseMauiApp<App>();
+
+        // Services
+        builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
+        builder.Services.AddSingleton<IVocabularyRepository, VocabularyRepository>();
+        builder.Services.AddSingleton<ISpeechService, SpeechService>();
+        builder.Services.AddSingleton<IFilePickerService, FilePickerService>();
+
+        // OCR - fejlesztéshez mock
+        builder.Services.AddSingleton<IOcrService, MockOcrService>();
+
+        // Ha API OCR kell, akkor pl.:
+        // builder.Services.AddHttpClient<IOcrService, ApiOcrService>();
+
+        // ViewModels
+        builder.Services.AddTransient<VocabularyListViewModel>();
+        builder.Services.AddTransient<VocabularyEditViewModel>();
+        builder.Services.AddTransient<ImportViewModel>();
+
+        // Views
+        builder.Services.AddTransient<VocabularyListPage>();
+        builder.Services.AddTransient<VocabularyEditPage>();
+        builder.Services.AddTransient<ImportPage>();
+
+        builder.Services.AddSingleton<AppShell>();
+        builder.Services.AddSingleton<App>();
+
+        return builder.Build();
+    }
+}
+```
+
+---
+
+# 21. Mit tud ez a minta?
+
+## CRUD
+- **Create**: új szó hozzáadása
+- **Read**: lista és keresés
+- **Update**: szó szerkesztése
+- **Delete**: törlés
+
+## SQLite
+- helyi adatbázis
+- `sqlite-net-pcl`
+
+## OCR import
+- képfájl kiválasztása
+- OCR service hívása
+- szavak listázása
+- mentés előtt kézi korrekció
+
+## MVVM
+- ViewModel-ek commandokkal
+- bindolható property-k
+- UI logika elkülönítve
+
+## SOLID
+- interfészalapú felépítés
+- repository pattern
+- külön service-ek
+
+---
+
+# 22. Hol kell még tovább javítani, ha “production” minőség kell?
+
+## 1. Validáció külön rétegbe
+Most a ViewModelben van az alap validáció. Lehet külön validator osztály.
+
+## 2. Logging
+Érdemes:
+- `ILogger<T>`
+- hibák naplózása
+
+## 3. Exception handling
+Most minimalista. Célszerű minden async commandban `try/catch`.
+
+## 4. DTO-k és mapper
+Nagyobb projektnél az adatmodell és UI modell különválhat.
+
+## 5. OCR nyelvi szűrés
+Jó lenne külön tokenizáló / stopword service.
+
+## 6. Translation service
+A következő lépésként külön `ITranslationService`.
+
+## 7. Quiz modul
+Külön `IQuizService`, `QuizViewModel`, `QuizResult`.
+
+---
+
+# 23. OCR valódi megoldás MAUI-ban
+
+A fenti minta **architekturálisan készen áll**, de a valódi OCR implementációt még be kell kötni.
+
+## 3 reális irány:
+
+### A) OCR API
+Leggyorsabban működő megoldás.
+- MAUI kiválaszt képet
+- elküldi API-nak
+- API visszaad szöveget
+
+### B) Saját backend + Tesseract
+- képet feltöltöd szerverre
+- szerver OCR-ozza
+- visszaküldi a szöveget
+
+### C) Platform-specifikus natív OCR
+- Android ML Kit
+- iOS Vision Framework
+- Windows OCR
+
+Ez a legkomplexebb, de offline lehet.
+
+**Kezdésnek én az A vagy B opciót javaslom.**
+
+---
+
+# 24. Következő logikus bővítés: fordítás és szófaj
+
+Ehhez interfészek:
+
+```csharp
+public interface ITranslationService
+{
+    Task<string> TranslateWordAsync(string sourceWord, string sourceLanguage, string targetLanguage);
+}
+
+public interface IPartOfSpeechService
+{
+    Task<string> DetectPartOfSpeechAsync(string word, string languageCode, string? sentence = null);
+}
+```
+
+Akkor az OCR importnál már automatikusan kitölthető:
+- fordítás
+- szófaj
+- megjegyzés
+
+de a user még mindig javíthatná.
+
+---
+
+# 25. Amit még nagyon ajánlok
+Mivel nyelvtanuló appot építesz, érdemes lesz hozzáadni:
+
+- `SuccessCount`
+- `FailCount`
+- `LastReviewedUtc`
+- `Difficulty`
+- `IsFavorite`
+
+a `VocabularyItem` modellhez.
+
+Például:
+
+```csharp
+public int SuccessCount { get; set; }
+public int FailCount { get; set; }
+public DateTime? LastReviewedUtc { get; set; }
+public bool IsFavorite { get; set; }
+```
+
+Így később spaced repetition jellegű gyakorlás is mehet.
+
+---
+
+# 26. Rövid összegzés
+Igen, ez a minta már ad:
+- **MVVM**
+- **SOLID alapú szerkezet**
+- **teljes CRUD**
+- **SQLite**
+- **OCR import architektúra**
+
+és erre már szépen rá lehet építeni:
+- fordítás
+- szófaj-felismerés
+- quiz
+- statisztika
+- teljes szöveg felolvasás
+
+---
+
+Ha akarod, a következő üzenetben megcsinálom a folytatást is, például az alábbiak egyikét:
+
+1. **Quiz modul MVVM-ben**  
+2. **TranslationService + automatikus fordítás importkor**  
+3. **Valódi OCR API bekötés HttpClienttel**  
+4. **Teljes projekt ZIP-szerű fájllistás formában, copy-paste kész kóddal**  
+
+Ha szeretnéd, én most a **Quiz modult MVVM-ben** csinálnám meg következőnek, mert az illik legjobban a célodhoz.
+
+### USER
+a FilePicker ComException-t dob valószínüleg a platform miatt. Mi lehet a gond?
+
+### ASSISTANT
+Igen, ez **gyakori MAUI-ban**, főleg `FilePicker` / `MediaPicker` esetén, és sokszor tényleg **platformspecifikus ok** áll mögötte.
+
+A `COMException` önmagában még túl általános, de általában ezek a leggyakoribb okok.
+
+---
+
+# 1. Először: melyik platformon fut?
+A hiba oka nagyon más lehet attól függően, hogy:
+
+- **Windows**
+- **Android**
+- **iOS**
+- **MacCatalyst**
+
+Ha megírod a pontos platformot és a hibaüzenetet / HRESULT kódot, sokkal pontosabban meg lehet mondani.
+
+---
+
+# 2. Windows alatt a leggyakoribb okok
+
+## A) Nincs megfelelő ablak-context / nem UI threadről hívod
+A picker natív Windows dialogot nyit. Ha ez nincs jó UI contextből hívva, jöhet `COMException`.
+
+### Fontos:
+A `FilePicker.Default.PickAsync()` hívást **UI eseményből** vagy biztosan **főszálról** indítsd.
+
+Példa:
+```csharp
+await MainThread.InvokeOnMainThreadAsync(async () =>
+{
+    var result = await FilePicker.Default.PickAsync(new PickOptions
+    {
+        PickerTitle = "Válassz képet",
+        FileTypes = FilePickerFileType.Images
+    });
+});
+```
+
+---
+
+## B) Windows App SDK / MAUI bug vagy lifecycle gond
+Néha a picker akkor dob hibát, ha:
+- túl korán hívod
+- az oldal még nincs teljesen betöltve
+- Shell navigáció után azonnal hívod
+
+### Példa rossz esetre:
+- constructorból hívod
+- `OnAppearing` elején automatikusan hívod
+
+### Jobb:
+- gombnyomásra indítsd
+- ne az oldal konstruktorában
+
+---
+
+## C) Desktopon nincs normál file association / restricted context
+Ritkábban előfordul, hogy Windows desktop alatt valamilyen sandbox / app state / packaging probléma van.
+
+---
+
+# 3. Android alatt a leggyakoribb okok
+
+## A) Permission probléma
+Bár a `FilePicker` sok mindent intéz, Android verziótól függően előjöhet jogosultsági gond.
+
+### Nézd meg:
+- Android 13+
+- scoped storage
+- régebbi Android verzió
+
+Bár a sima `FilePicker` általában nem kér külön klasszikus storage permissiont minden esetben, néha platformfüggő edge case jön elő.
+
+---
+
+## B) Emulator / device issue
+Néha az emulatoron nincs rendesen file picker app / gallery / documents provider.
+
+Ez főleg akkor lehet gond, ha:
+- nincs telepített fájlkezelő
+- emulator image hiányos
+
+---
+
+# 4. iOS / MacCatalyst alatt
+
+## A) Simulator limitation
+Simulatoron bizonyos picker funkciók néha furcsán viselkednek.
+
+## B) Nem megfelelő entitlement / access
+Ritkább, de előfordulhat.
+
+---
+
+# 5. A te kódodban mi lehet a gond?
+
+A korábbi mintában ez volt:
+
+```csharp
+public async Task<string?> PickImageAsync()
+{
+    var result = await FilePicker.Default.PickAsync(new PickOptions
+    {
+        PickerTitle = "Válassz képfájlt",
+        FileTypes = FilePickerFileType.Images
+    });
+
+    return result?.FullPath;
+}
+```
+
+Ez **elvileg jó**, de ha `COMException` jön, akkor valószínűleg nem maga a szintaxis rossz, hanem:
+
+- rossz platform timing
+- UI thread probléma
+- Windows picker lifecycle gond
+- platform permission/provider issue
+
+---
+
+# 6. Mit csinálj rögtön?
+
+## Tedd köré try-catch-et és logold a részletes hibát
+```csharp
+public async Task<string?> PickImageAsync()
+{
+    try
+    {
+        var result = await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            return await FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = "Válassz képfájlt",
+                FileTypes = FilePickerFileType.Images
+            });
+        });
+
+        return result?.FullPath;
+    }
+    catch (Exception ex)
+    {
+        await Shell.Current.DisplayAlert("Hiba", $"{ex.GetType().Name}: {ex.Message}", "OK");
+        return null;
+    }
+}
+```
+
+Ha van inner exception vagy HRESULT, azt is írd ki.
+
+---
+
+# 7. Windows esetén erősen ajánlott ellenőrzés
+
+## Gombnyomásból hívd?
+Ez jó:
+```csharp
+[RelayCommand]
+public async Task PickImageAsync()
+{
+    var path = await _filePickerService.PickImageAsync();
+    if (!string.IsNullOrWhiteSpace(path))
+        SelectedFilePath = path;
+}
+```
+
+Ez akkor jó, ha tényleg user click indítja.
+
+### Ne így:
+- constructorban
+- automatikusan navigáció után rögtön
+- background taskból
+
+---
+
+# 8. FilePicker helyett MediaPicker?
+Ha **kifejezetten képet** akarsz kiválasztani, néha jobb a `MediaPicker`.
+
+## Példa:
+```csharp
+public async Task<string?> PickImageAsync()
+{
+    try
+    {
+        var result = await MediaPicker.Default.PickPhotoAsync();
+
+        return result?.FullPath;
+    }
+    catch (Exception ex)
+    {
+        await Shell.Current.DisplayAlert("Hiba", $"{ex.GetType().Name}: {ex.Message}", "OK");
+        return null;
+    }
+}
+```
+
+### Előny:
+- képekhez sokszor stabilabb UX
+- mobilon természetesebb
+
+### Hátrány:
+- Windowson is működés platformfüggő lehet
+- nem általános file picker
+
+Ha kizárólag képet importálsz OCR-hez, akkor **MediaPicker sokszor jobb választás**.
+
+---
+
+# 9. Windows specifikus workaround
+Windowson néha a `FullPath` használata problémás lehet bizonyos forrásokból. Ilyenkor biztonságosabb a stream alapú megoldás.
+
+Példa:
+```csharp
+var file = await FilePicker.Default.PickAsync(new PickOptions
+{
+    PickerTitle = "Válassz képet",
+    FileTypes = FilePickerFileType.Images
+});
+
+if (file != null)
+{
+    using var stream = await file.OpenReadAsync();
+    // streamet feldolgozod vagy saját temp fájlba másolod
+}
+```
+
+Sok esetben ez stabilabb, mint kizárólag `FullPath`-ra hagyatkozni.
+
+---
+
+# 10. OCR-hez amúgy is jobb lehet streamet használni
+Mert ha API-nak küldöd, nem is kell feltétlen `FullPath`.
+
+Példa interfész:
+```csharp
+public interface IFilePickerService
+{
+    Task<FileResult?> PickImageAsync();
+}
+```
+
+Implementáció:
+```csharp
+public async Task<FileResult?> PickImageAsync()
+{
+    try
+    {
+        return await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            return await FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = "Válassz képet",
+                FileTypes = FilePickerFileType.Images
+            });
+        });
+    }
+    catch
+    {
+        return null;
+    }
+}
+```
+
+És utána:
+```csharp
+var file = await _filePickerService.PickImageAsync();
+if (file != null)
+{
+    using var stream = await file.OpenReadAsync();
+    // OCR feldolgozás
+}
+```
+
+Ez architekturálisan is jobb.
+
+---
+
+# 11. Android manifest / permission kérdés
+Ha Androidon futsz, és mégis kell valami extra hozzá, ellenőrizheted ezeket, bár sima pickerhez sokszor nem kell manuálisan:
+
+`Platforms/Android/AndroidManifest.xml`
+
+Például:
+```xml
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+```
+
+Régebbi Androidra:
+```xml
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+```
+
+De hangsúlyosan: a modern `FilePicker` / `MediaPicker` esetén ezt nem mindig neked kell direkt kezelni. Inkább edge case.
+
+---
+
+# 12. A legvalószínűbb megoldás nálad
+Mivel azt írtad, hogy **„valószínűleg a platform miatt”**, nekem az a gyanúm, hogy:
+
+## Ha Windows:
+- nem főszálról fut
+- túl korán hívódik
+- Shell/navigation timing issue
+- `FilePicker` helyett `MediaPicker` vagy stream alapú feldolgozás kéne
+
+## Ha Android:
+- emulator/provider probléma
+- `MediaPicker.PickPhotoAsync()` jobb lehet
+
+---
+
+# 13. Javasolt javított service
+
+## Ha OCR-hez kép kell, ezt használnám:
+```csharp
+using Microsoft.Maui.ApplicationModel;
+
+public class FilePickerService : IFilePickerService
+{
+    public async Task<FileResult?> PickImageAsync()
+    {
+        try
+        {
+            return await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                return await FilePicker.Default.PickAsync(new PickOptions
+                {
+                    PickerTitle = "Válassz képet",
+                    FileTypes = FilePickerFileType.Images
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"FilePicker hiba: {ex}");
+            await Shell.Current.DisplayAlert("Hiba", $"{ex.GetType().Name}: {ex.Message}", "OK");
+            return null;
+        }
+    }
+}
+```
+
+Interfész:
+```csharp
+public interface IFilePickerService
+{
+    Task<FileResult?> PickImageAsync();
+}
+```
+
+---
+
+## ViewModel:
+```csharp
+[RelayCommand]
+public async Task PickImageAsync()
+{
+    var file = await _filePickerService.PickImageAsync();
+    if (file != null)
+    {
+        SelectedFilePath = file.FileName;
+        // vagy stream kezelés
+    }
+}
+```
+
+---
+
+# 14. Ha Windows desktopon nagyon szívsz vele
+Néha MAUI alatt praktikusabb egy **platformspecifikus Windows picker service** készítése WinUI API-val. Ez már mélyebb workaround, de ha kell, meg lehet csinálni.
+
+---
+
+# 15. Amit most kérek tőled a pontos diagnózishoz
+Másold be ezt a 3 dolgot:
+
+1. **melyik platformon fut**
+   - Windows / Android / iOS?
+
+2. **a pontos exception message**
+   - pl. HRESULT is
+
+3. **hol hívod**
+   - gombnyomásra?
+   - constructorból?
+   - `OnAppearing`-ből?
+   - Commandból?
+
+---
+
+# 16. Rövid válasz
+Igen, a `COMException` valószínűleg platform / UI thread / picker lifecycle probléma.
+
+## Első körben ezt próbáld:
+- **UI threadről hívd**
+- **gombnyomásból**
+- **try-catch + pontos log**
+- ha csak képet választasz: próbáld a **`MediaPicker.Default.PickPhotoAsync()`**-t
+- lehetőleg **streammel dolgozz**, ne csak `FullPath`-tal
+
+---
+
+Ha akarod, a következő üzenetben adok egy **platformbiztosabb MAUI image picker service-t**, ami:
+- Windowson,
+- Androidon,
+- és OCR importnál  
+jobb mintát ad `FileResult` + `Stream` alapon.
+
+### USER
+```
+FilePicker COM error: 0x80004005 - 
+The thread '.NET TP Worker' (2264) has exited with code 0 (0x0).
+Exception thrown: 'System.Runtime.InteropServices.COMException' in System.Private.CoreLib.dll
+Exception thrown: 'System.Runtime.InteropServices.COMException' in System.Private.CoreLib.dll
+```
+
+### ASSISTANT
+Igen — ebből a logból a legvalószínűbb ok:
+
+## A `FilePicker` nem UI szálról fut
+A kulcs rész ez:
+
+- **`.NET TP Worker`**
+- `COMException`
+- `0x80004005`
+
+A **TP Worker** = thread pool worker thread, tehát a picker hívás nem a megfelelő UI thread kontextusból történik.
+
+Windows alatt a natív file picker különösen érzékeny erre.
+
+---
+
+# Miért történik ez?
+A natív Windows picker COM / WinUI alapú UI komponens, és azt általában:
+
+- **főszálról**
+- **aktív ablakhoz kötve**
+- **UI contextből**
+
+kell meghívni.
+
+Ha egy háttérszálról futó async chainből indítod, simán jön az ilyen:
+
+- `COMException`
+- `0x80004005 (E_FAIL)`
+
+---
+
+# Legvalószínűbb konkrét ok a te esetedben
+Bár `Command`-ból hívod, a lánc valahol átkerül worker threadre, és ott fut le a `PickAsync()`.
+
+Ezért kell **explicit módon MainThreadre kényszeríteni**.
+
+---
+
+# Megoldás
+
+## 1. A service-ben hívd MainThreadről
+Ne csak simán:
+
+```csharp
+var result = await FilePicker.Default.PickAsync(...);
+```
+
+hanem így:
+
+```csharp
+using Microsoft.Maui.ApplicationModel;
+
+public class FilePickerService : IFilePickerService
+{
+    public async Task<FileResult?> PickImageAsync()
+    {
+        try
+        {
+            var result = await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                return await FilePicker.Default.PickAsync(new PickOptions
+                {
+                    PickerTitle = "Válassz képet",
+                    FileTypes = FilePickerFileType.Images
+                });
+            });
+
+            return result;
+        }
+        catch (COMException comEx)
+        {
+            System.Diagnostics.Debug.WriteLine($"FilePicker COM error: 0x{comEx.HResult:X} - {comEx.Message}");
+            await Shell.Current.DisplayAlert("COM hiba", $"0x{comEx.HResult:X}: {comEx.Message}", "OK");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"FilePicker hiba: {ex}");
+            await Shell.Current.DisplayAlert("Hiba", $"{ex.GetType().Name}: {ex.Message}", "OK");
+            return null;
+        }
+    }
+}
+```
+
+---
+
+# 2. Ne constructorból / automatikusan hívd
+Csak:
+- gombnyomásra
+- user interactionből
+
+Ez jó:
+```csharp
+[RelayCommand]
+public async Task PickImageAsync()
+{
+    var file = await _filePickerService.PickImageAsync();
+    if (file != null)
+    {
+        SelectedFilePath = file.FileName;
+    }
+}
+```
+
+Ez rossz ötlet:
+- constructor
+- `OnAppearing`-ben automatikusan
+- háttérfeladatból
+
+---
+
+# 3. Windows alatt néha a `FilePicker` helyett jobb a `FileResult + stream`
+OCR-hez amúgy is jobb.
+
+## Interfész
+```csharp
+public interface IFilePickerService
+{
+    Task<FileResult?> PickImageAsync();
+}
+```
+
+## Használat
+```csharp
+var file = await _filePickerService.PickImageAsync();
+if (file != null)
+{
+    using var stream = await file.OpenReadAsync();
+    // OCR feldolgozás streamből
+}
+```
+
+Ez jobb, mint `FullPath`-ra támaszkodni.
+
+---
+
+# 4. Ha csak képet akarsz, próbáld meg `MediaPicker`-rel is
+Főleg ha mobilon is cél.
+
+```csharp
+public async Task<FileResult?> PickImageAsync()
+{
+    try
+    {
+        return await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            return await MediaPicker.Default.PickPhotoAsync();
+        });
+    }
+    catch (Exception ex)
+    {
+        System.Diagnostics.Debug.WriteLine(ex);
+        return null;
+    }
+}
+```
+
+### Mikor jobb?
+- ha tényleg fotó / kép kell
+- nem általános fájlválasztás
+
+---
+
+# 5. MVVM + SOLID szempontból javasolt végleges service
+Én ezt tenném be nálad.
+
+## IFilePickerService.cs
+```csharp
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface IFilePickerService
+{
+    Task<FileResult?> PickImageAsync();
+}
+```
+
+## FilePickerService.cs
+```csharp
+using System.Runtime.InteropServices;
+using Microsoft.Maui.ApplicationModel;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class FilePickerService : IFilePickerService
+{
+    public async Task<FileResult?> PickImageAsync()
+    {
+        try
+        {
+            return await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                return await FilePicker.Default.PickAsync(new PickOptions
+                {
+                    PickerTitle = "Válassz képfájlt",
+                    FileTypes = FilePickerFileType.Images
+                });
+            });
+        }
+        catch (COMException comEx)
+        {
+            System.Diagnostics.Debug.WriteLine($"FilePicker COM error: 0x{comEx.HResult:X} - {comEx.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"FilePicker error: {ex}");
+            return null;
+        }
+    }
+}
+```
+
+---
+
+# 6. Ha még így is hibázik Windows alatt
+Akkor 3 további lehetőség van.
+
+## A) A hívás túl korai
+Ha rögtön oldalmegnyitás után fut, várj egy kicsit vagy csak gombra indítsd.
+
+## B) Shell / modal / navigation state
+Néha picker nyitás közben az ablak nincs megfelelő állapotban.
+
+## C) Windows-specifikus picker service kell
+Ilyenkor WinUI `FileOpenPicker`-t kell használni platformspecifikusan, az ablak handle inicializálásával.
+
+Ez stabilabb lehet Windowson, mint a cross-platform wrapper.
+
+---
+
+# 7. Nagyon valószínű, hogy nálad ez elég lesz
+A te hibád alapján a **MainThread.InvokeOnMainThreadAsync** a legfontosabb javítás.
+
+---
+
+# 8. Plusz diagnosztika
+Rakd bele ezt is:
+
+```csharp
+System.Diagnostics.Debug.WriteLine($"IsMainThread: {MainThread.IsMainThread}");
+```
+
+közvetlenül a `PickAsync` előtt.
+
+Példa:
+```csharp
+System.Diagnostics.Debug.WriteLine($"Before picker - IsMainThread: {MainThread.IsMainThread}");
+```
+
+Ha eddig `false`, meg is van a gond.
+
+---
+
+# 9. Röviden
+A hiba oka nagy eséllyel ez:
+
+- Windows
+- `FilePicker`
+- háttérszál / worker thread
+- nem UI thread
+
+## Javítás:
+- `MainThread.InvokeOnMainThreadAsync(...)`
+- csak user-interakcióból hívd
+- `FileResult` + stream használat
+- szükség esetén `MediaPicker`
+
+---
+
+Ha akarod, a következő üzenetben adok egy **Windows-stabilabb platformspecifikus FilePickerService-t** is, WinUI `FileOpenPicker`-rel, mert az néha megbízhatóbban működik MAUI alatt, mint a sima `FilePicker.Default`.
+
+### USER
+*   **Quiz modul MVVM-ben**
+    
+*   **TranslationService + automatikus fordítás importkor**
+    
+*   **Valódi OCR API bekötés HttpClienttel**
+    
+*   **Teljes projekt ZIP-szerű fájllistás formában, copy-paste kész kóddal**
+
+### ASSISTANT
+Az alábbi tervet javaslom, mind a 4 elemre kiterjesztve. Nem adok most azonnal több száz sor “ömlesztett” kódot, hanem **egy konzisztens, copy-paste közeli projektvázat** adok, ami tényleg összerakható.
+
+---
+
+# Mit kapsz most
+
+1. **Quiz modul MVVM-ben**
+2. **TranslationService + automatikus fordítás importkor**
+3. **Valódi OCR API bekötés `HttpClient`-tel**
+4. **Teljes projekt fájllista / struktúra, hogy tudd hová mi menjen**
+
+A példát úgy adom meg, hogy:
+- **MAUI**
+- **MVVM**
+- **SQLite**
+- **SOLID**
+- később bővíthető legyen
+
+---
+
+# 1. Teljes projekt struktúra
+
+```text
+MauiLanguageApp/
+│
+├─ App.xaml
+├─ App.xaml.cs
+├─ AppShell.xaml
+├─ AppShell.xaml.cs
+├─ MauiProgram.cs
+│
+├─ Models/
+│  ├─ VocabularyItem.cs
+│  ├─ QuizQuestion.cs
+│  ├─ QuizAnswerOption.cs
+│  ├─ QuizSessionResult.cs
+│  ├─ OcrImportResult.cs
+│  ├─ TranslationResult.cs
+│  └─ AppSettings.cs
+│
+├─ Data/
+│  ├─ Interfaces/
+│  │  └─ IVocabularyRepository.cs
+│  └─ VocabularyRepository.cs
+│
+├─ Services/
+│  ├─ Interfaces/
+│  │  ├─ IDatabaseService.cs
+│  │  ├─ IOcrService.cs
+│  │  ├─ ITranslationService.cs
+│  │  ├─ ISpeechService.cs
+│  │  ├─ IFilePickerService.cs
+│  │  ├─ IQuizService.cs
+│  │  └─ ISettingsService.cs
+│  │
+│  ├─ DatabaseService.cs
+│  ├─ FilePickerService.cs
+│  ├─ SpeechService.cs
+│  ├─ QuizService.cs
+│  ├─ TranslationService.cs
+│  ├─ OcrSpaceOcrService.cs
+│  └─ SettingsService.cs
+│
+├─ ViewModels/
+│  ├─ BaseViewModel.cs
+│  ├─ VocabularyListViewModel.cs
+│  ├─ VocabularyEditViewModel.cs
+│  ├─ ImportViewModel.cs
+│  ├─ QuizViewModel.cs
+│  └─ SettingsViewModel.cs
+│
+├─ Views/
+│  ├─ VocabularyListPage.xaml
+│  ├─ VocabularyListPage.xaml.cs
+│  ├─ VocabularyEditPage.xaml
+│  ├─ VocabularyEditPage.xaml.cs
+│  ├─ ImportPage.xaml
+│  ├─ ImportPage.xaml.cs
+│  ├─ QuizPage.xaml
+│  ├─ QuizPage.xaml.cs
+│  ├─ SettingsPage.xaml
+│  └─ SettingsPage.xaml.cs
+│
+└─ Helpers/
+   └─ WordCleaner.cs
+```
+
+---
+
+# 2. Modellek
+
+## Models/VocabularyItem.cs
+```csharp
+using SQLite;
+
+namespace MauiLanguageApp.Models;
+
+public class VocabularyItem
+{
+    [PrimaryKey, AutoIncrement]
+    public int Id { get; set; }
+
+    public string SourceLanguage { get; set; } = "";
+    public string SourceWord { get; set; } = "";
+    public string TargetLanguage { get; set; } = "hu";
+    public string TargetWord { get; set; } = "";
+
+    public string PartOfSpeech { get; set; } = "";
+    public string Note { get; set; } = "";
+
+    public string SourceText { get; set; } = "";
+
+    public int SuccessCount { get; set; }
+    public int FailCount { get; set; }
+    public DateTime? LastReviewedUtc { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAtUtc { get; set; }
+}
+```
+
+## Models/OcrImportResult.cs
+```csharp
+namespace MauiLanguageApp.Models;
+
+public class OcrImportResult
+{
+    public string RawText { get; set; } = "";
+    public List<string> Words { get; set; } = new();
+}
+```
+
+## Models/TranslationResult.cs
+```csharp
+namespace MauiLanguageApp.Models;
+
+public class TranslationResult
+{
+    public string SourceText { get; set; } = "";
+    public string TranslatedText { get; set; } = "";
+    public string SourceLanguage { get; set; } = "";
+    public string TargetLanguage { get; set; } = "";
+}
+```
+
+## Models/QuizAnswerOption.cs
+```csharp
+namespace MauiLanguageApp.Models;
+
+public class QuizAnswerOption
+{
+    public string Text { get; set; } = "";
+    public bool IsCorrect { get; set; }
+}
+```
+
+## Models/QuizQuestion.cs
+```csharp
+namespace MauiLanguageApp.Models;
+
+public class QuizQuestion
+{
+    public VocabularyItem? SourceItem { get; set; }
+    public string Prompt { get; set; } = "";
+    public List<QuizAnswerOption> Options { get; set; } = new();
+}
+```
+
+## Models/QuizSessionResult.cs
+```csharp
+namespace MauiLanguageApp.Models;
+
+public class QuizSessionResult
+{
+    public int TotalQuestions { get; set; }
+    public int CorrectAnswers { get; set; }
+    public int WrongAnswers => TotalQuestions - CorrectAnswers;
+    public double Percentage => TotalQuestions == 0 ? 0 : (double)CorrectAnswers / TotalQuestions * 100.0;
+}
+```
+
+## Models/AppSettings.cs
+```csharp
+namespace MauiLanguageApp.Models;
+
+public class AppSettings
+{
+    public string OcrApiKey { get; set; } = "";
+    public string TranslationApiKey { get; set; } = "";
+    public string TranslationEndpoint { get; set; } = "";
+    public bool AutoTranslateOnImport { get; set; } = true;
+}
+```
+
+---
+
+# 3. Helper
+
+## Helpers/WordCleaner.cs
+```csharp
+using System.Text.RegularExpressions;
+
+namespace MauiLanguageApp.Helpers;
+
+public static class WordCleaner
+{
+    public static List<string> ExtractDistinctWords(string text, string languageCode)
+    {
+        var excluded = GetExcludedWords(languageCode);
+
+        return Regex.Matches(text ?? "", @"\p{L}+")
+            .Select(m => m.Value.Trim())
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .Where(w => !excluded.Contains(w, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+    }
+
+    private static List<string> GetExcludedWords(string languageCode)
+    {
+        return languageCode.ToLower() switch
+        {
+            "nl" => new() { "de", "het", "een" },
+            "en" => new() { "the", "a", "an" },
+            "de" => new() { "der", "die", "das", "ein", "eine" },
+            "hu" => new() { "a", "az" },
+            _ => new()
+        };
+    }
+}
+```
+
+---
+
+# 4. Data réteg
+
+## Data/Interfaces/IVocabularyRepository.cs
+```csharp
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Data.Interfaces;
+
+public interface IVocabularyRepository
+{
+    Task<List<VocabularyItem>> GetAllAsync();
+    Task<VocabularyItem?> GetByIdAsync(int id);
+    Task<List<VocabularyItem>> SearchAsync(string searchTerm);
+    Task<List<VocabularyItem>> GetBySourceLanguageAsync(string sourceLanguage);
+    Task<int> AddAsync(VocabularyItem item);
+    Task<int> UpdateAsync(VocabularyItem item);
+    Task<int> DeleteAsync(int id);
+}
+```
+
+## Data/VocabularyRepository.cs
+```csharp
+using MauiLanguageApp.Data.Interfaces;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Data;
+
+public class VocabularyRepository : IVocabularyRepository
+{
+    private readonly IDatabaseService _databaseService;
+
+    public VocabularyRepository(IDatabaseService databaseService)
+    {
+        _databaseService = databaseService;
+    }
+
+    public async Task<List<VocabularyItem>> GetAllAsync()
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        return await db.Table<VocabularyItem>()
+            .OrderBy(x => x.SourceWord)
+            .ToListAsync();
+    }
+
+    public async Task<VocabularyItem?> GetByIdAsync(int id)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        return await db.Table<VocabularyItem>()
+            .FirstOrDefaultAsync(x => x.Id == id);
+    }
+
+    public async Task<List<VocabularyItem>> SearchAsync(string searchTerm)
+    {
+        var all = await GetAllAsync();
+
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            return all;
+
+        searchTerm = searchTerm.Trim().ToLowerInvariant();
+
+        return all.Where(x =>
+            x.SourceWord.ToLowerInvariant().Contains(searchTerm) ||
+            x.TargetWord.ToLowerInvariant().Contains(searchTerm) ||
+            x.PartOfSpeech.ToLowerInvariant().Contains(searchTerm) ||
+            x.Note.ToLowerInvariant().Contains(searchTerm))
+            .ToList();
+    }
+
+    public async Task<List<VocabularyItem>> GetBySourceLanguageAsync(string sourceLanguage)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        return await db.Table<VocabularyItem>()
+            .Where(x => x.SourceLanguage == sourceLanguage)
+            .ToListAsync();
+    }
+
+    public async Task<int> AddAsync(VocabularyItem item)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        item.CreatedAtUtc = DateTime.UtcNow;
+        return await db.InsertAsync(item);
+    }
+
+    public async Task<int> UpdateAsync(VocabularyItem item)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        item.UpdatedAtUtc = DateTime.UtcNow;
+        return await db.UpdateAsync(item);
+    }
+
+    public async Task<int> DeleteAsync(int id)
+    {
+        var db = await _databaseService.GetConnectionAsync();
+        var existing = await GetByIdAsync(id);
+        if (existing == null)
+            return 0;
+
+        return await db.DeleteAsync(existing);
+    }
+}
+```
+
+---
+
+# 5. Database service
+
+## Services/Interfaces/IDatabaseService.cs
+```csharp
+using SQLite;
+
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface IDatabaseService
+{
+    Task<SQLiteAsyncConnection> GetConnectionAsync();
+}
+```
+
+## Services/DatabaseService.cs
+```csharp
+using SQLite;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class DatabaseService : IDatabaseService
+{
+    private SQLiteAsyncConnection? _connection;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+
+    public async Task<SQLiteAsyncConnection> GetConnectionAsync()
+    {
+        if (_connection != null)
+            return _connection;
+
+        await _semaphore.WaitAsync();
+        try
+        {
+            if (_connection == null)
+            {
+                var path = Path.Combine(FileSystem.AppDataDirectory, "languageapp.db3");
+                _connection = new SQLiteAsyncConnection(path);
+                await _connection.CreateTableAsync<VocabularyItem>();
+            }
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+
+        return _connection;
+    }
+}
+```
+
+---
+
+# 6. Settings service
+
+## Services/Interfaces/ISettingsService.cs
+```csharp
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface ISettingsService
+{
+    AppSettings Get();
+    void Save(AppSettings settings);
+}
+```
+
+## Services/SettingsService.cs
+```csharp
+using System.Text.Json;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class SettingsService : ISettingsService
+{
+    private readonly string _settingsPath;
+
+    public SettingsService()
+    {
+        _settingsPath = Path.Combine(FileSystem.AppDataDirectory, "appsettings.json");
+    }
+
+    public AppSettings Get()
+    {
+        if (!File.Exists(_settingsPath))
+            return new AppSettings();
+
+        var json = File.ReadAllText(_settingsPath);
+        return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+    }
+
+    public void Save(AppSettings settings)
+    {
+        var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+
+        File.WriteAllText(_settingsPath, json);
+    }
+}
+```
+
+---
+
+# 7. FilePicker service
+
+## Services/Interfaces/IFilePickerService.cs
+```csharp
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface IFilePickerService
+{
+    Task<FileResult?> PickImageAsync();
+}
+```
+
+## Services/FilePickerService.cs
+```csharp
+using System.Runtime.InteropServices;
+using Microsoft.Maui.ApplicationModel;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class FilePickerService : IFilePickerService
+{
+    public async Task<FileResult?> PickImageAsync()
+    {
+        try
+        {
+            return await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                return await FilePicker.Default.PickAsync(new PickOptions
+                {
+                    PickerTitle = "Válassz képet",
+                    FileTypes = FilePickerFileType.Images
+                });
+            });
+        }
+        catch (COMException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"FilePicker COM error: 0x{ex.HResult:X} - {ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+            return null;
+        }
+    }
+}
+```
+
+---
+
+# 8. Speech service
+
+## Services/Interfaces/ISpeechService.cs
+```csharp
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface ISpeechService
+{
+    Task SpeakAsync(string text, string languageCode);
+}
+```
+
+## Services/SpeechService.cs
+```csharp
+using Microsoft.Maui.Media;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class SpeechService : ISpeechService
+{
+    public async Task SpeakAsync(string text, string languageCode)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        var locales = await TextToSpeech.Default.GetLocalesAsync();
+        var locale = locales.FirstOrDefault(l =>
+            l.Language.StartsWith(languageCode, StringComparison.OrdinalIgnoreCase));
+
+        await TextToSpeech.Default.SpeakAsync(text, new SpeechOptions
+        {
+            Locale = locale,
+            Pitch = 1.0f,
+            Volume = 1.0f
+        });
+    }
+}
+```
+
+---
+
+# 9. Translation service
+
+Itt most egy **HttpClient-es általános minta** jön. A konkrét szolgáltató lehet:
+- DeepL
+- Azure Translator
+- saját API
+
+Az interfész marad ugyanaz.
+
+## Services/Interfaces/ITranslationService.cs
+```csharp
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface ITranslationService
+{
+    Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage);
+}
+```
+
+## Services/TranslationService.cs
+Példa: saját API / DeepL-szerű formára átalakítható.
+```csharp
+using System.Text;
+using System.Text.Json;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class TranslationService : ITranslationService
+{
+    private readonly HttpClient _httpClient;
+    private readonly ISettingsService _settingsService;
+
+    public TranslationService(HttpClient httpClient, ISettingsService settingsService)
+    {
+        _httpClient = httpClient;
+        _settingsService = settingsService;
+    }
+
+    public async Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage)
+    {
+        var settings = _settingsService.Get();
+
+        if (string.IsNullOrWhiteSpace(settings.TranslationEndpoint))
+        {
+            return new TranslationResult
+            {
+                SourceText = text,
+                TranslatedText = "",
+                SourceLanguage = sourceLanguage,
+                TargetLanguage = targetLanguage
+            };
+        }
+
+        var payload = new
+        {
+            text,
+            sourceLanguage,
+            targetLanguage,
+            apiKey = settings.TranslationApiKey
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.PostAsync(settings.TranslationEndpoint, content);
+        response.EnsureSuccessStatusCode();
+
+        var responseJson = await response.Content.ReadAsStringAsync();
+
+        // Elvárt válasz példa:
+        // { "translatedText": "ház" }
+
+        using var doc = JsonDocument.Parse(responseJson);
+        var translatedText = doc.RootElement.GetProperty("translatedText").GetString() ?? "";
+
+        return new TranslationResult
+        {
+            SourceText = text,
+            TranslatedText = translatedText,
+            SourceLanguage = sourceLanguage,
+            TargetLanguage = targetLanguage
+        };
+    }
+}
+```
+
+---
+
+# 10. Valódi OCR API `HttpClient`-tel
+
+Itt egy példát adok **OCR.Space** jellegű szolgáltatás logikájára, mert könnyen érthető. Ha más API-t használsz, a szerkezet ugyanaz.
+
+## Services/Interfaces/IOcrService.cs
+```csharp
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface IOcrService
+{
+    Task<OcrImportResult> ExtractTextAsync(FileResult file, string languageCode);
+}
+```
+
+## Services/OcrSpaceOcrService.cs
+```csharp
+using System.Net.Http.Headers;
+using System.Text.Json;
+using MauiLanguageApp.Helpers;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class OcrSpaceOcrService : IOcrService
+{
+    private readonly HttpClient _httpClient;
+    private readonly ISettingsService _settingsService;
+
+    public OcrSpaceOcrService(HttpClient httpClient, ISettingsService settingsService)
+    {
+        _httpClient = httpClient;
+        _settingsService = settingsService;
+    }
+
+    public async Task<OcrImportResult> ExtractTextAsync(FileResult file, string languageCode)
+    {
+        var settings = _settingsService.Get();
+
+        if (string.IsNullOrWhiteSpace(settings.OcrApiKey))
+            throw new InvalidOperationException("OCR API kulcs nincs beállítva.");
+
+        using var stream = await file.OpenReadAsync();
+        using var form = new MultipartFormDataContent();
+        using var streamContent = new StreamContent(stream);
+
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        form.Add(streamContent, "file", file.FileName);
+        form.Add(new StringContent(settings.OcrApiKey), "apikey");
+
+        // OCR.Space nyelvkód más lehet, itt egyszerű minta:
+        form.Add(new StringContent(MapLanguageCode(languageCode)), "language");
+        form.Add(new StringContent("true"), "isOverlayRequired");
+
+        var response = await _httpClient.PostAsync("https://api.ocr.space/parse/image", form);
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        string parsedText = ParseOcrSpaceText(json);
+        var words = WordCleaner.ExtractDistinctWords(parsedText, languageCode);
+
+        return new OcrImportResult
+        {
+            RawText = parsedText,
+            Words = words
+        };
+    }
+
+    private static string ParseOcrSpaceText(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+
+        if (!doc.RootElement.TryGetProperty("ParsedResults", out var parsedResults))
+            return "";
+
+        var lines = new List<string>();
+
+        foreach (var result in parsedResults.EnumerateArray())
+        {
+            if (result.TryGetProperty("ParsedText", out var parsedTextElement))
+            {
+                var text = parsedTextElement.GetString();
+                if (!string.IsNullOrWhiteSpace(text))
+                    lines.Add(text);
+            }
+        }
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string MapLanguageCode(string languageCode)
+    {
+        return languageCode.ToLowerInvariant() switch
+        {
+            "en" => "eng",
+            "de" => "ger",
+            "nl" => "dut",
+            "fr" => "fre",
+            "es" => "spa",
+            _ => "eng"
+        };
+    }
+}
+```
+
+---
+
+# 11. Quiz service
+
+## Services/Interfaces/IQuizService.cs
+```csharp
+using MauiLanguageApp.Models;
+
+namespace MauiLanguageApp.Services.Interfaces;
+
+public interface IQuizService
+{
+    QuizQuestion? GenerateQuestion(List<VocabularyItem> items, bool sourceToTarget = true);
+    void RegisterAnswer(VocabularyItem item, bool isCorrect);
+    QuizSessionResult CreateResult(int total, int correct);
+}
+```
+
+## Services/QuizService.cs
+```csharp
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.Services;
+
+public class QuizService : IQuizService
+{
+    private readonly Random _random = new();
+
+    public QuizQuestion? GenerateQuestion(List<VocabularyItem> items, bool sourceToTarget = true)
+    {
+        if (items == null || items.Count < 4)
+            return null;
+
+        var correct = items[_random.Next(items.Count)];
+
+        var wrongCandidates = items
+            .Where(x => x.Id != correct.Id)
+            .OrderBy(_ => _random.Next())
+            .Take(3)
+            .ToList();
+
+        var options = new List<QuizAnswerOption>();
+
+        if (sourceToTarget)
+        {
+            options.AddRange(wrongCandidates.Select(x => new QuizAnswerOption
+            {
+                Text = x.TargetWord,
+                IsCorrect = false
+            }));
+
+            options.Add(new QuizAnswerOption
+            {
+                Text = correct.TargetWord,
+                IsCorrect = true
+            });
+
+            options = options.OrderBy(_ => _random.Next()).ToList();
+
+            return new QuizQuestion
+            {
+                SourceItem = correct,
+                Prompt = correct.SourceWord,
+                Options = options
+            };
+        }
+        else
+        {
+            options.AddRange(wrongCandidates.Select(x => new QuizAnswerOption
+            {
+                Text = x.SourceWord,
+                IsCorrect = false
+            }));
+
+            options.Add(new QuizAnswerOption
+            {
+                Text = correct.SourceWord,
+                IsCorrect = true
+            });
+
+            options = options.OrderBy(_ => _random.Next()).ToList();
+
+            return new QuizQuestion
+            {
+                SourceItem = correct,
+                Prompt = correct.TargetWord,
+                Options = options
+            };
+        }
+    }
+
+    public void RegisterAnswer(VocabularyItem item, bool isCorrect)
+    {
+        item.LastReviewedUtc = DateTime.UtcNow;
+        if (isCorrect)
+            item.SuccessCount++;
+        else
+            item.FailCount++;
+    }
+
+    public QuizSessionResult CreateResult(int total, int correct)
+    {
+        return new QuizSessionResult
+        {
+            TotalQuestions = total,
+            CorrectAnswers = correct
+        };
+    }
+}
+```
+
+---
+
+# 12. BaseViewModel
+
+## ViewModels/BaseViewModel.cs
+```csharp
+using CommunityToolkit.Mvvm.ComponentModel;
+
+namespace MauiLanguageApp.ViewModels;
+
+public partial class BaseViewModel : ObservableObject
+{
+    [ObservableProperty]
+    private bool isBusy;
+
+    [ObservableProperty]
+    private string title = "";
+}
+```
+
+---
+
+# 13. Import ViewModel automatikus fordítással
+
+## ViewModels/ImportViewModel.cs
+```csharp
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MauiLanguageApp.Data.Interfaces;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.ViewModels;
+
+public partial class ImportViewModel : BaseViewModel
+{
+    private readonly IFilePickerService _filePickerService;
+    private readonly IOcrService _ocrService;
+    private readonly ITranslationService _translationService;
+    private readonly ISettingsService _settingsService;
+    private readonly IVocabularyRepository _repository;
+
+    private FileResult? _selectedFile;
+
+    [ObservableProperty]
+    private string selectedFileName = "";
+
+    [ObservableProperty]
+    private string sourceLanguage = "nl";
+
+    [ObservableProperty]
+    private string targetLanguage = "hu";
+
+    [ObservableProperty]
+    private string rawText = "";
+
+    public ObservableCollection<VocabularyItem> ImportedItems { get; } = new();
+
+    public ImportViewModel(
+        IFilePickerService filePickerService,
+        IOcrService ocrService,
+        ITranslationService translationService,
+        ISettingsService settingsService,
+        IVocabularyRepository repository)
+    {
+        _filePickerService = filePickerService;
+        _ocrService = ocrService;
+        _translationService = translationService;
+        _settingsService = settingsService;
+        _repository = repository;
+
+        Title = "OCR Import";
+    }
+
+    [RelayCommand]
+    public async Task PickImageAsync()
+    {
+        _selectedFile = await _filePickerService.PickImageAsync();
+        SelectedFileName = _selectedFile?.FileName ?? "";
+    }
+
+    [RelayCommand]
+    public async Task ImportAsync()
+    {
+        if (_selectedFile == null)
+        {
+            await Shell.Current.DisplayAlert("Hiba", "Először válassz ki egy képet.", "OK");
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            ImportedItems.Clear();
+
+            var result = await _ocrService.ExtractTextAsync(_selectedFile, SourceLanguage);
+            RawText = result.RawText;
+
+            var settings = _settingsService.Get();
+
+            foreach (var word in result.Words)
+            {
+                string translated = "";
+
+                if (settings.AutoTranslateOnImport)
+                {
+                    try
+                    {
+                        var translation = await _translationService.TranslateAsync(word, SourceLanguage, TargetLanguage);
+                        translated = translation.TranslatedText;
+                    }
+                    catch
+                    {
+                        translated = "";
+                    }
+                }
+
+                ImportedItems.Add(new VocabularyItem
+                {
+                    SourceLanguage = SourceLanguage,
+                    TargetLanguage = TargetLanguage,
+                    SourceWord = word,
+                    TargetWord = translated,
+                    PartOfSpeech = "",
+                    Note = "",
+                    SourceText = RawText
+                });
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task SaveImportedAsync()
+    {
+        var validItems = ImportedItems
+            .Where(x => !string.IsNullOrWhiteSpace(x.SourceWord))
+            .ToList();
+
+        foreach (var item in validItems)
+            await _repository.AddAsync(item);
+
+        await Shell.Current.DisplayAlert("OK", $"{validItems.Count} szó mentve.", "OK");
+        await Shell.Current.GoToAsync("..");
+    }
+
+    [RelayCommand]
+    public void RemoveImportedItem(VocabularyItem? item)
+    {
+        if (item != null)
+            ImportedItems.Remove(item);
+    }
+}
+```
+
+---
+
+# 14. Quiz ViewModel
+
+## ViewModels/QuizViewModel.cs
+```csharp
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MauiLanguageApp.Data.Interfaces;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.ViewModels;
+
+public partial class QuizViewModel : BaseViewModel
+{
+    private readonly IVocabularyRepository _repository;
+    private readonly IQuizService _quizService;
+    private readonly ISpeechService _speechService;
+
+    private List<VocabularyItem> _items = new();
+    private QuizQuestion? _currentQuestion;
+
+    [ObservableProperty]
+    private string questionText = "";
+
+    [ObservableProperty]
+    private string resultText = "";
+
+    [ObservableProperty]
+    private string scoreText = "0 / 0";
+
+    [ObservableProperty]
+    private string option1 = "";
+
+    [ObservableProperty]
+    private string option2 = "";
+
+    [ObservableProperty]
+    private string option3 = "";
+
+    [ObservableProperty]
+    private string option4 = "";
+
+    [ObservableProperty]
+    private bool sourceToTarget = true;
+
+    private int _total;
+    private int _correct;
+
+    public QuizViewModel(
+        IVocabularyRepository repository,
+        IQuizService quizService,
+        ISpeechService speechService)
+    {
+        _repository = repository;
+        _quizService = quizService;
+        _speechService = speechService;
+        Title = "Quiz";
+    }
+
+    [RelayCommand]
+    public async Task LoadAsync()
+    {
+        _items = await _repository.GetAllAsync();
+
+        if (_items.Count < 4)
+        {
+            await Shell.Current.DisplayAlert("Kevés adat", "Legalább 4 szó kell a quizhez.", "OK");
+            return;
+        }
+
+        LoadNextQuestion();
+    }
+
+    [RelayCommand]
+    public void LoadNextQuestion()
+    {
+        _currentQuestion = _quizService.GenerateQuestion(_items, SourceToTarget);
+
+        if (_currentQuestion == null)
+            return;
+
+        QuestionText = _currentQuestion.Prompt;
+        ResultText = "";
+
+        Option1 = _currentQuestion.Options.ElementAtOrDefault(0)?.Text ?? "";
+        Option2 = _currentQuestion.Options.ElementAtOrDefault(1)?.Text ?? "";
+        Option3 = _currentQuestion.Options.ElementAtOrDefault(2)?.Text ?? "";
+        Option4 = _currentQuestion.Options.ElementAtOrDefault(3)?.Text ?? "";
+    }
+
+    [RelayCommand]
+    public async Task SpeakQuestionAsync()
+    {
+        if (_currentQuestion?.SourceItem == null)
+            return;
+
+        var lang = SourceToTarget
+            ? _currentQuestion.SourceItem.SourceLanguage
+            : _currentQuestion.SourceItem.TargetLanguage;
+
+        await _speechService.SpeakAsync(QuestionText, lang);
+    }
+
+    [RelayCommand]
+    public async Task AnswerAsync(string selectedOption)
+    {
+        if (_currentQuestion?.SourceItem == null)
+            return;
+
+        _total++;
+
+        var correctOption = _currentQuestion.Options.FirstOrDefault(x => x.IsCorrect);
+        bool isCorrect = correctOption?.Text == selectedOption;
+
+        if (isCorrect)
+        {
+            _correct++;
+            ResultText = "Helyes!";
+        }
+        else
+        {
+            ResultText = $"Hibás! Helyes válasz: {correctOption?.Text}";
+        }
+
+        ScoreText = $"{_correct} / {_total}";
+
+        _quizService.RegisterAnswer(_currentQuestion.SourceItem, isCorrect);
+        await _repository.UpdateAsync(_currentQuestion.SourceItem);
+    }
+
+    [RelayCommand]
+    public async Task ShowSummaryAsync()
+    {
+        var result = _quizService.CreateResult(_total, _correct);
+        await Shell.Current.DisplayAlert(
+            "Összesítés",
+            $"Kérdések: {result.TotalQuestions}\nHelyes: {result.CorrectAnswers}\nHibás: {result.WrongAnswers}\nEredmény: {result.Percentage:0.##}%",
+            "OK");
+    }
+}
+```
+
+---
+
+# 15. Settings ViewModel
+
+## ViewModels/SettingsViewModel.cs
+```csharp
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MauiLanguageApp.Models;
+using MauiLanguageApp.Services.Interfaces;
+
+namespace MauiLanguageApp.ViewModels;
+
+public partial class SettingsViewModel : BaseViewModel
+{
+    private readonly ISettingsService _settingsService;
+
+    [ObservableProperty]
+    private string ocrApiKey = "";
+
+    [ObservableProperty]
+    private string translationApiKey = "";
+
+    [ObservableProperty]
+    private string translationEndpoint = "";
+
+    [ObservableProperty]
+    private bool autoTranslateOnImport = true;
+
+    public SettingsViewModel(ISettingsService settingsService)
+    {
+        _settingsService = settingsService;
+        Title = "Beállítások";
+        Load();
+    }
+
+    private void Load()
+    {
+        AppSettings settings = _settingsService.Get();
+        OcrApiKey = settings.OcrApiKey;
+        TranslationApiKey = settings.TranslationApiKey;
+        TranslationEndpoint = settings.TranslationEndpoint;
+        AutoTranslateOnImport = settings.AutoTranslateOnImport;
+    }
+
+    [RelayCommand]
+    public async Task SaveAsync()
+    {
+        _settingsService.Save(new AppSettings
+        {
+            OcrApiKey = OcrApiKey,
+            TranslationApiKey = TranslationApiKey,
+            TranslationEndpoint = TranslationEndpoint,
+            AutoTranslateOnImport = AutoTranslateOnImport
+        });
+
+        await Shell.Current.DisplayAlert("OK", "Beállítások mentve.", "OK");
+    }
+}
+```
+
+---
+
+# 16. Quiz Page
+
+## Views/QuizPage.xaml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="MauiLanguageApp.Views.QuizPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="{Binding Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="Irány:" VerticalOptions="Center" />
+                <Switch IsToggled="{Binding SourceToTarget}" />
+                <Label Text="Forrás → Cél" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <Button Text="Betöltés" Command="{Binding LoadCommand}" />
+            <Button Text="Felolvasás" Command="{Binding SpeakQuestionCommand}" />
+
+            <Label Text="{Binding QuestionText}" FontSize="28" FontAttributes="Bold" />
+
+            <Button Text="{Binding Option1}" Command="{Binding AnswerCommand}" CommandParameter="{Binding Option1}" />
+            <Button Text="{Binding Option2}" Command="{Binding AnswerCommand}" CommandParameter="{Binding Option2}" />
+            <Button Text="{Binding Option3}" Command="{Binding AnswerCommand}" CommandParameter="{Binding Option3}" />
+            <Button Text="{Binding Option4}" Command="{Binding AnswerCommand}" CommandParameter="{Binding Option4}" />
+
+            <Label Text="{Binding ResultText}" />
+            <Label Text="{Binding ScoreText}" />
+
+            <Button Text="Következő" Command="{Binding LoadNextQuestionCommand}" />
+            <Button Text="Összesítés" Command="{Binding ShowSummaryCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
+```
+
+## Views/QuizPage.xaml.cs
+```csharp
+using MauiLanguageApp.ViewModels;
+
+namespace MauiLanguageApp.Views;
+
+public partial class QuizPage : ContentPage
+{
+    public QuizPage(QuizViewModel viewModel)
+    {
+        InitializeComponent();
+        BindingContext = viewModel;
+    }
+}
+```
+
+---
+
+# 17. Settings Page
+
+## Views/SettingsPage.xaml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="MauiLanguageApp.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="{Binding Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Entry Placeholder="OCR API Key" Text="{Binding OcrApiKey}" />
+            <Entry Placeholder="Translation API Key" Text="{Binding TranslationApiKey}" />
+            <Entry Placeholder="Translation Endpoint" Text="{Binding TranslationEndpoint}" />
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="Auto translate importkor" VerticalOptions="Center" />
+                <Switch IsToggled="{Binding AutoTranslateOnImport}" />
+            </HorizontalStackLayout>
+
+            <Button Text="Mentés" Command="{Binding SaveCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
+```
+
+## Views/SettingsPage.xaml.cs
+```csharp
+using MauiLanguageApp.ViewModels;
+
+namespace MauiLanguageApp.Views;
+
+public partial class SettingsPage : ContentPage
+{
+    public SettingsPage(SettingsViewModel viewModel)
+    {
+        InitializeComponent();
+        BindingContext = viewModel;
+    }
+}
+```
+
+---
+
+# 18. Shell
+
+## AppShell.xaml
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="MauiLanguageApp.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:MauiLanguageApp.Views">
+
+    <TabBar>
+        <ShellContent Title="Szótár" ContentTemplate="{DataTemplate views:VocabularyListPage}" Route="VocabularyListPage" />
+        <ShellContent Title="Import" ContentTemplate="{DataTemplate views:ImportPage}" Route="ImportPage" />
+        <ShellContent Title="Quiz" ContentTemplate="{DataTemplate views:QuizPage}" Route="QuizPage" />
+        <ShellContent Title="Beállítások" ContentTemplate="{DataTemplate views:SettingsPage}" Route="SettingsPage" />
+    </TabBar>
+</Shell>
+```
+
+## AppShell.xaml.cs
+```csharp
+using MauiLanguageApp.Views;
+
+namespace MauiLanguageApp;
+
+public partial class AppShell : Shell
+{
+    public AppShell()
+    {
+        InitializeComponent();
+
+        Routing.RegisterRoute(nameof(VocabularyEditPage), typeof(VocabularyEditPage));
+    }
+}
+```
+
+---
+
+# 19. MauiProgram.cs
+
+## Nagyon fontos
+Az OCR és Translation service `HttpClient`-et használ, ezért így regisztráld:
+
+```csharp
+using MauiLanguageApp.Data;
+using MauiLanguageApp.Data.Interfaces;
+using MauiLanguageApp.Services;
+using MauiLanguageApp.Services.Interfaces;
+using MauiLanguageApp.ViewModels;
+using MauiLanguageApp.Views;
+
+namespace MauiLanguageApp;
+
+public static class MauiProgram
+{
+    public static MauiApp CreateMauiApp()
+    {
+        var builder = MauiApp.CreateBuilder();
+
+        builder.UseMauiApp<App>();
+
+        builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
+        builder.Services.AddSingleton<IVocabularyRepository, VocabularyRepository>();
+        builder.Services.AddSingleton<ISettingsService, SettingsService>();
+        builder.Services.AddSingleton<IFilePickerService, FilePickerService>();
+        builder.Services.AddSingleton<ISpeechService, SpeechService>();
+        builder.Services.AddSingleton<IQuizService, QuizService>();
+
+        builder.Services.AddHttpClient<IOcrService, OcrSpaceOcrService>();
+        builder.Services.AddHttpClient<ITranslationService, TranslationService>();
+
+        builder.Services.AddTransient<VocabularyListViewModel>();
+        builder.Services.AddTransient<VocabularyEditViewModel>();
+        builder.Services.AddTransient<ImportViewModel>();
+        builder.Services.AddTransient<QuizViewModel>();
+        builder.Services.AddTransient<SettingsViewModel>();
+
+        builder.Services.AddTransient<VocabularyListPage>();
+        builder.Services.AddTransient<VocabularyEditPage>();
+        builder.Services.AddTransient<ImportPage>();
+        builder.Services.AddTransient<QuizPage>();
+        builder.Services.AddTransient<SettingsPage>();
+
+        builder.Services.AddSingleton<AppShell>();
+        builder.Services.AddSingleton<App>();
+
+        return builder.Build();
+    }
+}
+```
+
+---
+
+# 20. OCR API és fordító API valós használata
+
+## OCR
+Az `OcrSpaceOcrService` csak példa, de valós hívási struktúra.  
+Ha más szolgáltatót használsz:
+- endpointot cserélsz
+- request body-t cseréled
+- response parse-t cseréled
+
+## Fordítás
+A `TranslationService` jelenleg saját / generikus endpoint mintát mutat.
+
+### Ha DeepL-t használsz
+A request form-urlencoded szokott lenni, pl.:
+- `text`
+- `target_lang`
+- `source_lang`
+
+### Ha Azure-t használsz
+- subscription key
+- region header
+- endpoint query / body
+
+Ha szeretnéd, a következő körben adok **konkrét DeepL** vagy **Azure Translator** implementációt is.
+
+---
+
+# 21. Mi hiányzik még ebből a rövidített teljes csomagból?
+A listaoldal és szerkesztőoldal korábban már megvolt, itt most a fókusz a 4 új elem volt.
+
+Ha akarod, a következő üzenetben megírom még teljes, copy-paste formában ezeket is:
+
+- `VocabularyListPage.xaml/.cs`
+- `VocabularyEditPage.xaml/.cs`
+- `VocabularyListViewModel`
+- `VocabularyEditViewModel`
+
+így tényleg egyben kész lesz az egész.
+
+---
+
+# 22. Rövid összegzés
+
+Most megkaptad:
+- **Quiz modul MVVM-ben**
+- **TranslationService automatikus fordítással importkor**
+- **Valódi OCR API váz `HttpClient`-tel**
+- **Projektstruktúra ZIP-szerű formában**
+
+---
+
+Ha akarod, a következő üzenetben megadom a **hiányzó CRUD oldalak teljes copy-paste kódját is**, hogy tényleg egyben összeálljon a projekt.

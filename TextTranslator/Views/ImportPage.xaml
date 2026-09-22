@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TextTranslator.Views.ImportPage"
+             Title="{Binding Title}">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Entry Placeholder="Forrás nyelv (pl. nl)" Text="{Binding SourceLanguage}" />
+            <Entry Placeholder="Cél nyelv (pl. hu)" Text="{Binding TargetLanguage}" />
+
+            <Button Text="Kép kiválasztása" Command="{Binding PickImageCommand}" />
+            <Label Text="{Binding SelectedFilePath}" FontSize="12" />
+
+            <Button Text="OCR import" Command="{Binding ImportCommand}" />
+
+            <Label Text="Felismerett szöveg:" FontAttributes="Bold" />
+            <Editor Text="{Binding RawText}" HeightRequest="120" AutoSize="TextChanges" />
+
+            <Label Text="Importált szavak:" FontAttributes="Bold" />
+
+            <CollectionView ItemsSource="{Binding ImportedItems}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Padding="10" Margin="0,4">
+                            <VerticalStackLayout>
+                                <Entry Placeholder="Forrás szó" Text="{Binding SourceWord}" />
+                                <Entry Placeholder="Fordítás" Text="{Binding TargetWord}" />
+                                <Entry Placeholder="Szófaj" Text="{Binding PartOfSpeech}" />
+                                <Entry Placeholder="Megjegyzés" Text="{Binding Note}" />
+                                <Button Text="Eltávolítás"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveImportedItemCommand}"
+                                        CommandParameter="{Binding .}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="Importált elemek mentése" Command="{Binding SaveImportedCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
