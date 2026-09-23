@@ -57,6 +57,29 @@ namespace TextTranslator.Data
         public async Task<int> AddAsync(VocabularyItem item)
         {
             var db = await databaseService.GetConnectionAsync();
+            item.SourceLanguage = item.SourceLanguage.Trim();
+            item.SourceWord = item.SourceWord.Trim();
+            item.TargetLanguage = item.TargetLanguage.Trim();
+            item.TargetWord = item.TargetWord.Trim();
+            item.PartOfSpeech = item.PartOfSpeech.Trim();
+            item.Note = item.Note.Trim();
+            item.SourceText = item.SourceText.Trim();
+
+            var existingItems = await db.Table<VocabularyItem>().ToListAsync();
+            var exists = existingItems.Any(x =>
+                string.Equals(x.SourceLanguage.Trim(), item.SourceLanguage, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.SourceWord.Trim(), item.SourceWord, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.TargetLanguage.Trim(), item.TargetLanguage, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.TargetWord.Trim(), item.TargetWord, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.PartOfSpeech.Trim(), item.PartOfSpeech, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.Note.Trim(), item.Note, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.SourceText.Trim(), item.SourceText, StringComparison.OrdinalIgnoreCase));
+
+            if (exists)
+            {
+                return 0;
+            }
+
             item.CreatedAtUtc = DateTime.UtcNow;
             item.UpdatedAtUtc = null;
             return await db.InsertAsync(item);
